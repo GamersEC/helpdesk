@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Helpdesk - Tickets</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #f5f5f5; }
+        a.button {
+            display: inline-block;
+            padding: 8px 15px;
+            margin-top: 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        a.button:hover { background-color: #0056b3; }
+        .status-abierto { color: green; font-weight: bold; }
+        .status-cerrado { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+<h1>Tickets Helpdesk</h1>
+<a href="{{ url_for('new_ticket') }}" class="button">Crear Nuevo Ticket</a>
+
+{% if tickets %}
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Estado</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for ticket in tickets %}
+    <tr>
+        <td>{{ ticket.id }}</td>
+        <td>{{ ticket.title }}</td>
+        <td>
+            <span class="status-{{ ticket.status | lower }}">{{ ticket.status }}</span>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No hay tickets aún.</p>
+{% endif %}
+</body>
+</html>
