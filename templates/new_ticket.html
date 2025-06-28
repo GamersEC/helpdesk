@@ -1,8 +1,46 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Nuevo Ticket - Helpdesk</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-0">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('new_ticket') }}">
+                <i class="bi bi-headset me-2"></i>
+                Helpdesk Pro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('new_ticket') }}">
+                            <i class="bi bi-house-door me-1"></i>Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('new_ticket') }}">
+                            <i class="bi bi-plus-circle me-1"></i>Nuevo Ticket
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-{% block title %}Crear Nuevo Ticket{% endblock %}
-
-{% block content %}
     <!-- Header -->
     <div class="hero-custom text-white py-4">
         <div class="container">
@@ -15,49 +53,367 @@
     <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <!-- Mensajes Flash -->
-                {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}" role="alert">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
                 <div class="card card-custom">
-                    <div class="card-header bg-white py-4"><h2 class="card-title mb-0 fw-bold"><i class="bi bi-ticket-perforated me-2 text-primary"></i>Información del Ticket</h2><p class="text-muted mb-0 mt-2">Completa todos los campos para crear tu ticket</p></div>
+                    <div class="card-header bg-white py-4">
+                        <h2 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-ticket-perforated me-2 text-primary"></i>
+                            Información del Ticket
+                        </h2>
+                        <p class="text-muted mb-0 mt-2">Completa todos los campos para crear tu ticket</p>
+                    </div>
                     <div class="card-body p-4">
-                        <form action="{{ url_for('new_ticket') }}" method="post" class="needs-validation" novalidate>
+                        <!-- FORMULARIO SIN ACTION NI METHOD -->
+                        <form id="ticketForm">
                             <!-- Campo Nombre -->
-                            <div class="mb-4"><label for="name" class="form-label fw-semibold"><i class="bi bi-person-fill text-primary me-2"></i>Tu Nombre</label><input type="text" id="name" name="name" class="form-control form-control-lg form-control-custom" required placeholder="Tu Nombre Completo"><div class="invalid-feedback">Por favor, ingresa tu nombre.</div></div>
+                            <div class="mb-4">
+                                <label for="name" class="form-label fw-semibold">
+                                    <i class="bi bi-person-fill text-primary me-2"></i>Tu Nombre
+                                </label>
+                                <input type="text" id="name" name="name" class="form-control form-control-lg form-control-custom" 
+                                       required placeholder="Tu Nombre Completo">
+                                <div class="invalid-feedback">Por favor, ingresa tu nombre.</div>
+                            </div>
+
                             <!-- Campo Email -->
-                            <div class="mb-4"><label for="email" class="form-label fw-semibold"><i class="bi bi-envelope-at text-primary me-2"></i>Tu Correo Electrónico</label><input type="email" id="email" name="email" class="form-control form-control-lg form-control-custom" required placeholder="tu.correo@ejemplo.com"><div class="form-text"><i class="bi bi-info-circle me-1"></i>Usaremos este correo para enviarte el enlace de seguimiento.</div><div class="invalid-feedback">Por favor, ingresa un correo electrónico válido.</div></div>
+                            <div class="mb-4">
+                                <label for="email" class="form-label fw-semibold">
+                                    <i class="bi bi-envelope-at text-primary me-2"></i>Tu Correo Electrónico
+                                </label>
+                                <input type="email" id="email" name="email" class="form-control form-control-lg form-control-custom" 
+                                       required placeholder="tu.correo@ejemplo.com">
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Usaremos este correo para enviarte el enlace de seguimiento.
+                                </div>
+                                <div class="invalid-feedback">Por favor, ingresa un correo electrónico válido.</div>
+                            </div>
+
                             <!-- Campo Título -->
-                            <div class="mb-4"><label for="title" class="form-label fw-semibold"><i class="bi bi-type text-primary me-2"></i>Título del Ticket</label><input type="text" id="title" name="title" class="form-control form-control-lg form-control-custom" required maxlength="100" placeholder="Describe brevemente tu problema..."><div class="invalid-feedback">Por favor, ingresa un título para el ticket.</div></div>
+                            <div class="mb-4">
+                                <label for="title" class="form-label fw-semibold">
+                                    <i class="bi bi-type text-primary me-2"></i>Título del Ticket
+                                </label>
+                                <input type="text" id="title" name="title" class="form-control form-control-lg form-control-custom" 
+                                       required maxlength="100" placeholder="Describe brevemente tu problema...">
+                                <div class="invalid-feedback">Por favor, ingresa un título para el ticket.</div>
+                            </div>
+
                             <!-- Campo Descripción -->
-                            <div class="mb-4"><label for="description" class="form-label fw-semibold"><i class="bi bi-chat-text text-primary me-2"></i>Descripción Detallada</label><textarea id="description" name="description" class="form-control form-control-custom" rows="6" required placeholder="Describe detalladamente tu problema..."></textarea><div class="invalid-feedback">Por favor, proporciona una descripción del problema.</div></div>
+                            <div class="mb-4">
+                                <label for="description" class="form-label fw-semibold">
+                                    <i class="bi bi-chat-text text-primary me-2"></i>Descripción Detallada
+                                </label>
+                                <textarea id="description" name="description" class="form-control form-control-custom" 
+                                          rows="6" required placeholder="Describe detalladamente tu problema..."></textarea>
+                                <div class="invalid-feedback">Por favor, proporciona una descripción del problema.</div>
+                            </div>
+
                             <!-- Prioridad -->
-                            <div class="mb-4"><label class="form-label fw-semibold"><i class="bi bi-exclamation-triangle text-primary me-2"></i>Prioridad</label><div class="row"><div class="col-md-4 mb-2"><div class="form-check"><input class="form-check-input" type="radio" name="priority" id="priority-low" value="Baja" checked><label class="form-check-label" for="priority-low"><span class="badge bg-success me-2">●</span>Baja</label></div></div><div class="col-md-4 mb-2"><div class="form-check"><input class="form-check-input" type="radio" name="priority" id="priority-medium" value="Media"><label class="form-check-label" for="priority-medium"><span class="badge bg-warning me-2">●</span>Media</label></div></div><div class="col-md-4 mb-2"><div class="form-check"><input class="form-check-input" type="radio" name="priority" id="priority-high" value="Alta"><label class="form-check-label" for="priority-high"><span class="badge bg-danger me-2">●</span>Alta</label></div></div></div></div>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-exclamation-triangle text-primary me-2"></i>Prioridad
+                                </label>
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="priority" id="priority-low" value="Baja" checked>
+                                            <label class="form-check-label" for="priority-low">
+                                                <span class="badge bg-success me-2">●</span>Baja
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="priority" id="priority-medium" value="Media">
+                                            <label class="form-check-label" for="priority-medium">
+                                                <span class="badge bg-warning me-2">●</span>Media
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="priority" id="priority-high" value="Alta">
+                                            <label class="form-check-label" for="priority-high">
+                                                <span class="badge bg-danger me-2">●</span>Alta
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Botones -->
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end"><a href="{{ url_for('home') }}" class="btn btn-outline-secondary btn-lg me-md-2"><i class="bi bi-x-circle me-2"></i>Cancelar</a><button type="submit" class="btn btn-primary-custom btn-lg btn-custom"><i class="bi bi-check-circle me-2"></i>Crear Ticket</button></div>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('new_ticket') }}" class="btn btn-outline-secondary btn-lg me-md-2">
+                                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                                </a>
+                                <!-- BOTÓN DE TIPO BUTTON, NO SUBMIT -->
+                                <button type="button" id="previewBtn" class="btn btn-primary-custom btn-lg btn-custom">
+                                    <i class="bi bi-eye me-2"></i>Revisar y Crear Ticket
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-{% endblock %}
 
-{% block scripts %}
-    <!-- Form Validation Script -->
+    <!-- Modal de Confirmación -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="confirmModalLabel">
+                        <i class="bi bi-check-circle me-2"></i>Confirmar Creación del Ticket
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Revisa la información antes de crear tu ticket:</strong>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-3">
+                                    <strong><i class="bi bi-person-fill text-primary me-2"></i>Nombre:</strong>
+                                </div>
+                                <div class="col-sm-9">
+                                    <span id="confirmName" class="text-break"></span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-3">
+                                    <strong><i class="bi bi-envelope-at text-primary me-2"></i>Email:</strong>
+                                </div>
+                                <div class="col-sm-9">
+                                    <span id="confirmEmail" class="text-break"></span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-3">
+                                    <strong><i class="bi bi-type text-primary me-2"></i>Título:</strong>
+                                </div>
+                                <div class="col-sm-9">
+                                    <span id="confirmTitle" class="text-break"></span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-3">
+                                    <strong><i class="bi bi-exclamation-triangle text-primary me-2"></i>Prioridad:</strong>
+                                </div>
+                                <div class="col-sm-9">
+                                    <span id="confirmPriority"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <strong><i class="bi bi-chat-text text-primary me-2"></i>Descripción:</strong>
+                                </div>
+                                <div class="col-sm-9">
+                                    <div id="confirmDescription" class="text-break" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-pencil me-2"></i>Editar
+                    </button>
+                    <button type="button" id="confirmCreateBtn" class="btn btn-primary-custom">
+                        <i class="bi bi-check-circle me-2"></i>Crear Ticket
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2024 Helpdesk Pro. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Frontend-only Script -->
     <script>
-        (function() {
-            'use strict';
-            window.addEventListener('load', function() {
-                var forms = document.getElementsByClassName('needs-validation');
-                Array.prototype.filter.call(forms, function(form) {
-                    form.addEventListener('submit', function(event) {
-                        if (form.checkValidity() === false) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }
-                        form.classList.add('was-validated');
-                    }, false);
+        console.log('🚀 Confirmación Frontend iniciada');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ DOM cargado');
+            
+            // Elementos
+            const previewBtn = document.getElementById('previewBtn');
+            const confirmCreateBtn = document.getElementById('confirmCreateBtn');
+            const ticketForm = document.getElementById('ticketForm');
+            const modal = document.getElementById('confirmModal');
+            
+            console.log('Elementos encontrados:', {
+                previewBtn: !!previewBtn,
+                confirmCreateBtn: !!confirmCreateBtn,
+                ticketForm: !!ticketForm,
+                modal: !!modal
+            });
+
+            // Función para obtener la prioridad seleccionada
+            function getSelectedPriority() {
+                const priorities = document.querySelectorAll('input[name="priority"]');
+                for (let priority of priorities) {
+                    if (priority.checked) {
+                        return priority.value;
+                    }
+                }
+                return 'Baja';
+            }
+
+            // Función para obtener el badge de prioridad
+            function getPriorityBadge(priority) {
+                const badges = {
+                    'Baja': '<span class="badge bg-success">● Baja</span>',
+                    'Media': '<span class="badge bg-warning">● Media</span>',
+                    'Alta': '<span class="badge bg-danger">● Alta</span>'
+                };
+                return badges[priority] || badges['Baja'];
+            }
+
+            // Validación simple
+            function validateForm() {
+                let isValid = true;
+                const fields = ['name', 'email', 'title', 'description'];
+                
+                fields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    const value = field.value.trim();
+                    
+                    if (!value) {
+                        field.classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        field.classList.remove('is-invalid');
+                        field.classList.add('is-valid');
+                    }
                 });
-            }, false);
-        })();
+
+                // Validación específica del email
+                const emailField = document.getElementById('email');
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (emailField.value.trim() && !emailRegex.test(emailField.value)) {
+                    emailField.classList.add('is-invalid');
+                    emailField.classList.remove('is-valid');
+                    isValid = false;
+                }
+
+                return isValid;
+            }
+
+            // PREVENIR ENVÍO AUTOMÁTICO DEL FORMULARIO
+            ticketForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('⛔ Envío automático del formulario prevenido');
+                return false;
+            });
+
+            // EVENT LISTENER PARA EL BOTÓN PREVIEW
+            previewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('👁️ Botón Preview clickeado');
+                
+                // Validar formulario
+                if (!validateForm()) {
+                    console.log('❌ Validación falló');
+                    const firstInvalid = document.querySelector('.is-invalid');
+                    if (firstInvalid) {
+                        firstInvalid.focus();
+                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+
+                console.log('✅ Validación pasada');
+
+                // Obtener datos del formulario
+                const formData = {
+                    name: document.getElementById('name').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    title: document.getElementById('title').value.trim(),
+                    description: document.getElementById('description').value.trim(),
+                    priority: getSelectedPriority()
+                };
+
+                console.log('📋 Datos capturados:', formData);
+
+                // Llenar el modal
+                document.getElementById('confirmName').textContent = formData.name;
+                document.getElementById('confirmEmail').textContent = formData.email;
+                document.getElementById('confirmTitle').textContent = formData.title;
+                document.getElementById('confirmDescription').textContent = formData.description;
+                document.getElementById('confirmPriority').innerHTML = getPriorityBadge(formData.priority);
+
+                // Mostrar modal
+                const bootstrapModal = new bootstrap.Modal(modal);
+                bootstrapModal.show();
+                console.log('🎭 Modal mostrado');
+            });
+
+            // EVENT LISTENER PARA EL BOTÓN DE CONFIRMACIÓN
+            confirmCreateBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                console.log('✅ Confirmación del usuario - Creando ticket...');
+                
+                // Cambiar botón a estado de carga
+                confirmCreateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando...';
+                confirmCreateBtn.disabled = true;
+
+                // Obtener datos del formulario
+                const formData = new FormData(ticketForm);
+
+                console.log('📤 Enviando al servidor...');
+
+                // Enviar al servidor
+                fetch('{{ url_for("new_ticket") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    console.log('📨 Respuesta del servidor:', response.status);
+                    
+                    if (response.redirected) {
+                        // Si hay redirección, seguirla
+                        console.log('🔄 Redirección detectada:', response.url);
+                        window.location.href = response.url;
+                        return;
+                    }
+                    
+                    if (response.ok) {
+                        console.log('✅ Ticket creado exitosamente');
+                        // Redirigir manualmente si no hay redirección automática
+                        window.location.href = '{{ url_for("new_ticket") }}';
+                    } else {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error:', error);
+                    alert('Hubo un error al crear el ticket. Por favor, inténtalo de nuevo.');
+                    
+                    // Restaurar botón
+                    confirmCreateBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Crear Ticket';
+                    confirmCreateBtn.disabled = false;
+                });
+            });
+
+            console.log('🎯 Setup completado - Frontend confirmación lista');
+        });
     </script>
-{% endblock %}
+</body>
+</html>
