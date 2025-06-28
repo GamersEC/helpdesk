@@ -14,7 +14,7 @@ def get_utc_now():
 
 db = SQLAlchemy()
 
-# Modelo para los agentes/administradores
+#Modelo para los agentes/administradores
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -27,7 +27,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-# Modelo para los comentarios
+#Modelo para los comentarios
 class Comment(db.Model):
     __tablename__ = 'comments'
     id = db.Column(db.Integer, primary_key=True)
@@ -38,7 +38,7 @@ class Comment(db.Model):
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
 
 
-# Modelo de Ticket actualizado con campos para auto-cierre
+#Modelo de Ticket actualizado con campos para auto-cierre
 class Ticket(db.Model):
     __tablename__ = 'ticket'
     id = db.Column(db.Integer, primary_key=True)
