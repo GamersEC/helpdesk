@@ -1,9 +1,10 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
-from models import db, Ticket, User, Comment, get_utc_now  # Importar get_utc_now
+from models import db, Ticket, User, Comment, get_utc_now
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
 from datetime import timedelta
+import pytz
 
 app = Flask(__name__)
 
@@ -33,22 +34,35 @@ login_manager.login_message_category = "info"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-#Funcion auxiliar para el auto cierre de tickets
+
+#Filtro de plantilla para obtener la fecha y hora actual en UTC
+@app.template_filter('local_time')
+def format_datetime_local(utc_dt):
+    """Convierte una fecha UTC a la zona horaria local definida en .env."""
+    if not utc_dt:
+        return ""
+    #Obtener la zona horaria desde el .env, con 'UTC' como valor por defecto
+    local_tz_name = os.environ.get('APP_TIMEZONE', 'UTC')
+    try:
+        local_tz = pytz.timezone(local_tz_name)
+    except pytz.UnknownTimeZoneError:
+        local_tz = pytz.utc
+
+    local_dt = utc_dt.astimezone(local_tz)
+    return local_dt.strftime('%d-%m-%Y %H:%M %Z')
+
+
+#Funcion auxiliar para el auto cierro de tickets
 def auto_close_inactive_tickets():
-    """Encuentra y cierra tickets que han estado inactivos por más de 72 horas."""
     print("Checking for inactive tickets to auto-close...")
-
     time_limit = get_utc_now() - timedelta(days=3)
-
     tickets_to_close = Ticket.query.filter(
         Ticket.status == 'Abierto',
         Ticket.last_updated_by_type == 'Agent',
         Ticket.last_updated < time_limit
     ).all()
-
     if not tickets_to_close:
         return 0
-
     for ticket in tickets_to_close:
         ticket.status = 'Cerrado'
         system_comment = Comment(
@@ -58,13 +72,12 @@ def auto_close_inactive_tickets():
             author_type="Agent"
         )
         db.session.add(system_comment)
-
     db.session.commit()
     print(f"Auto-closed {len(tickets_to_close)} ticket(s).")
     return len(tickets_to_close)
 
 
-#Rutas publicas para los clientes
+#Rutas publicas
 @app.route('/')
 def home():
     return redirect(url_for('new_ticket'))
@@ -77,28 +90,20 @@ def new_ticket():
         description = request.form['description']
         customer_email = request.form['email']
         priority = request.form['priority']
-
         new_ticket_obj = Ticket(
-            customer_name=customer_name,
-            title=title,
-            description=description,
-            customer_email=customer_email,
-            priority=priority,
-            last_updated_by_type='Customer',
-            last_updated=get_utc_now()
+            customer_name=customer_name, title=title, description=description,
+            customer_email=customer_email, priority=priority,
+            last_updated_by_type='Customer', last_updated=get_utc_now()
         )
         db.session.add(new_ticket_obj)
         db.session.commit()
-
         try:
             send_tracking_email(new_ticket_obj)
             flash(f'¡Gracias {customer_name}, tu ticket fue creado con éxito!', 'success')
         except Exception as e:
             flash('Ticket creado, pero no se pudo enviar el correo de seguimiento.', 'warning')
             print(f"Error sending email: {e}")
-
         return redirect(url_for('ticket_created_success', tracking_id=new_ticket_obj.tracking_id))
-
     return render_template('new_ticket.html')
 
 @app.route('/ticket/<tracking_id>')
@@ -110,23 +115,18 @@ def track_ticket(tracking_id):
 def reply_ticket(tracking_id):
     ticket = Ticket.query.filter_by(tracking_id=tracking_id).first_or_404()
     reply_text = request.form.get('reply')
-
     if reply_text:
         new_comment = Comment(
-            content=reply_text,
-            ticket_id=ticket.id,
-            author_name=ticket.customer_name,
-            author_type='Customer'
+            content=reply_text, ticket_id=ticket.id,
+            author_name=ticket.customer_name, author_type='Customer'
         )
         db.session.add(new_comment)
-
         ticket.last_updated_by_type = 'Customer'
         ticket.last_updated = get_utc_now()
         db.session.commit()
         flash('Tu respuesta ha sido enviada.', 'success')
     else:
         flash('No puedes enviar una respuesta vacía.', 'warning')
-
     return redirect(url_for('track_ticket', tracking_id=ticket.tracking_id))
 
 @app.route('/search', methods=['POST'])
@@ -147,16 +147,13 @@ def ticket_created_success(tracking_id):
     ticket_url = url_for('track_ticket', tracking_id=tracking_id, _external=True)
     return render_template('ticket_created_success.html', ticket_url=ticket_url)
 
-
-
-#Rutas para los agentes (administradores)
+#Rutas de agente
 @app.route('/dashboard')
 @login_required
 def dashboard():
     closed_count = auto_close_inactive_tickets()
     if closed_count > 0:
         flash(f'{closed_count} ticket(s) han sido cerrados automáticamente por inactividad.', 'info')
-
     tickets = Ticket.query.order_by(Ticket.id.desc()).all()
     return render_template('index.html', tickets=tickets)
 
@@ -187,7 +184,6 @@ def add_comment(ticket_id):
     if comment_text:
         new_comment = Comment(content=comment_text, ticket_id=ticket.id, author_name=current_user.username, author_type='Agent')
         db.session.add(new_comment)
-
         ticket.last_updated_by_type = 'Agent'
         ticket.last_updated = get_utc_now()
         db.session.commit()
@@ -206,8 +202,7 @@ def close_ticket(ticket_id):
     flash(f'Ticket #{ticket.id} ha sido cerrado.', 'success')
     return redirect(url_for('dashboard'))
 
-
-#Funciones axuliares para el manejo de tickets
+#Funciones auxiliares para la gestión de tickets
 def send_tracking_email(ticket):
     subject = f"Tu ticket de soporte [#{ticket.id}] ha sido creado"
     tracking_url = url_for('track_ticket', tracking_id=ticket.tracking_id, _external=True)
@@ -215,8 +210,7 @@ def send_tracking_email(ticket):
     msg.html = render_template('email/tracking_link.html', ticket=ticket, tracking_url=tracking_url)
     mail.send(msg)
 
-
-#Creacion de la base de datos y usuario administrador inicial
+#Inicializar la app y la base de datos
 with app.app_context():
     db.create_all()
     admin_user = os.environ.get('ADMIN_USERNAME')
@@ -236,7 +230,7 @@ def create_admin(username, password):
         print(f"El usuario '{username}' ya existe.")
         return
     admin = User(username=username)
-    admin.set_password(admin_pass)
+    admin.set_password(password)
     db.session.add(admin)
     db.session.commit()
     print(f"Usuario administrador '{username}' creado con éxito.")

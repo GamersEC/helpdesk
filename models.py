@@ -9,7 +9,6 @@ import pytz
 UTC = pytz.UTC
 
 def get_utc_now():
-    """Devuelve la fecha y hora actual en UTC, consciente de la zona horaria."""
     return datetime.now(UTC)
 
 db = SQLAlchemy()
@@ -38,7 +37,7 @@ class Comment(db.Model):
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
 
 
-#Modelo de Ticket actualizado con campos para auto-cierre
+#Modelo de Ticket actualizado con campos para auto cierre
 class Ticket(db.Model):
     __tablename__ = 'ticket'
     id = db.Column(db.Integer, primary_key=True)
@@ -50,7 +49,7 @@ class Ticket(db.Model):
     status = db.Column(db.String(20), default='Abierto', nullable=False)
     priority = db.Column(db.String(20), default='Baja', nullable=False)
 
-    # --- COLUMNAS MODIFICADAS PARA AUTO-CIERRE CON ZONAS HORARIAS ---
+    #Columnas para el auto-cierre
     last_updated = db.Column(db.DateTime(timezone=True), default=get_utc_now, onupdate=get_utc_now)
     last_updated_by_type = db.Column(db.String(20), nullable=False, default='Customer')
 
