@@ -1,23 +1,34 @@
+version: '3.8'
+
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+  # Servicio de la aplicación Flask
+  web:
+    build: .  # Construye la imagen a partir del Dockerfile en el directorio actual
+    container_name: helpdesk_app
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Mapea el puerto 8000 del contenedor al 8000 de tu máquina
     volumes:
-      - ./backend:/app
+      - .:/app  # Monta el directorio actual en /app para ver cambios en vivo
+    env_file:
+      - .env  # <--- ¡AQUÍ ESTÁ LA MAGIA! Carga las variables desde el archivo .env
     depends_on:
-      - db
+      - db  # Se asegura de que el servicio 'db' se inicie antes que 'web'
+    command: flask run --host=0.0.0.0 --port=8000 # Comando para iniciar la app
 
+  # Servicio de la base de datos PostgreSQL
   db:
-    image: postgres:16
+    image: postgres:13
+    container_name: helpdesk_db
     environment:
-      POSTGRES_USER: helpdesk
-      POSTGRES_PASSWORD: helpdesk123
-      POSTGRES_DB: helpdesk_db
+      # Carga las variables de la base de datos desde el archivo .env
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data  # Persiste los datos de la BD
+    ports:
+      - "5432:5432" # Expone el puerto de la BD (opcional para desarrollo)
 
+# Define el volumen para la persistencia de datos
 volumes:
-  pgdata:
+  postgres_data:

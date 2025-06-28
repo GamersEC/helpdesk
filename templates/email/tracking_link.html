@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tu Ticket de Soporte</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px; color: #333;">
+<h2>¡Hola!</h2>
+<p>Hemos recibido tu solicitud de soporte con el título: "<strong>{{ ticket.title }}</strong>".</p>
+<p>Tu número de ticket es el <strong>#{{ ticket.id }}</strong>.</p>
+<p>Puedes seguir el estado de tu ticket en cualquier momento haciendo clic en el siguiente enlace:</p>
+<p style="text-align: center;">
+    <a href="{{ tracking_url }}" style="background-color: #5a47ea; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+        Ver mi Ticket
+    </a>
+</p>
+<p>Si el botón no funciona, copia y pega esta URL en tu navegador:</p>
+<p><a href="{{ tracking_url }}">{{ tracking_url }}</a></p>
+<hr>
+<p style="font-size: 0.9em; color: #777;">Gracias por contactar con nuestro equipo de soporte.</p>
+</body>
+</html>
