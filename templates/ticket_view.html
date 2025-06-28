@@ -1,59 +1,31 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Detalle del Ticket #{{ ticket.id }} - Helpdesk</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
-    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
-</head>
-<body>
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-0">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">
-            <i class="bi bi-headset me-2"></i>Helpdesk
-        </a>
-    </div>
-</nav>
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card card-custom">
-                <div class="card-header bg-white py-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="card-title mb-0 fw-bold">
-                            <i class="bi bi-ticket-detailed me-2 text-primary"></i>
-                            Detalle del Ticket <span class="badge bg-light text-dark">#{{ ticket.id }}</span>
-                        </h2>
-                    </div>
-                    <div>
-                        {% if ticket.status == 'Abierto' %}
-                            <span class="badge badge-custom bg-success fs-6"><i class="bi bi-check-circle me-1"></i>{{ ticket.status }}</span>
-                        {% else %}
-                            <span class="badge badge-custom bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>{{ ticket.status }}</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="card-body p-4">
-                    <h4 class="mb-3">{{ ticket.title }}</h4>
-                    <p class="text-muted"><strong>Prioridad:</strong> {{ ticket.priority }}</p>
-                    <hr>
-                    <p style="white-space: pre-wrap;">{{ ticket.description }}</p>
-                </div>
-                <div class="card-footer text-center">
-                    <a href="{{ url_for('new_ticket') }}" class="btn btn-primary-custom">Crear otro ticket</a>
-                </div>
+{% extends "base.html" %}
+
+{% block title %}Detalle del Ticket #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+
+                <!-- Mensajes Flash para mostrar confirmaciones o errores -->
+                {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}{% endwith %}
+
+                <!-- Detalles del Ticket -->
+                <div class="card card-custom mb-4"><div class="card-header bg-white py-4 d-flex justify-content-between align-items-center flex-wrap"><div><h2 class="card-title mb-1 fw-bold"><i class="bi bi-ticket-detailed me-2 text-primary"></i>Ticket <span class="badge bg-light text-dark">#{{ ticket.id }}</span></h2><p class="text-muted mb-0">{{ ticket.title }}</p></div><div class="mt-2 mt-md-0">{% if ticket.status == 'Abierto' %}<span class="badge badge-custom bg-success fs-6"><i class="bi bi-check-circle me-1"></i>{{ ticket.status }}</span>{% else %}<span class="badge badge-custom bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>{{ ticket.status }}</span>{% endif %}</div></div></div>
+
+                <!-- Historial de Conversación -->
+                <h4 class="mb-3">Historial de la Conversación</h4>
+
+                <!-- Mensaje Original del Cliente -->
+                <div class="card card-custom mb-3"><div class="card-body"><div class="d-flex w-100 justify-content-between"><h5 class="mb-1"><i class="bi bi-person-circle me-2"></i>{{ ticket.customer_name }} (Cliente)</h5><small class="text-muted">Ticket Inicial</small></div><hr><p class="mb-1" style="white-space: pre-wrap;">{{ ticket.description }}</p></div></div>
+
+                <!-- Comentarios Anteriores -->
+                {% for comment in ticket.comments %}<div class="card card-custom mb-3 {% if comment.author_type == 'Agent' %}border-start border-primary border-4{% else %}border-start border-secondary border-4{% endif %}"><div class="card-body"><div class="d-flex w-100 justify-content-between"><h5 class="mb-1">{% if comment.author_type == 'Agent' %}<i class="bi bi-headset me-2 text-primary"></i>{{ comment.author_name }} (Agente){% else %}<i class="bi bi-person-circle me-2"></i>{{ comment.author_name }} (Cliente){% endif %}</h5><small class="text-muted">{{ comment.timestamp.strftime('%d-%m-%Y %H:%M') }}</small></div><hr><p class="mb-1" style="white-space: pre-wrap;">{{ comment.content }}</p></div></div>{% endfor %}
+
+                <!-- Formulario para Responder (SOLO PARA AGENTES LOGUEADOS Y SI EL TICKET ESTÁ ABIERTO) -->
+                {% if current_user.is_authenticated and ticket.status == 'Abierto' %}<div class="card card-custom mt-4"><div class="card-header bg-light"><h5><i class="bi bi-pencil-square me-2"></i>Añadir una Respuesta</h5></div><div class="card-body"><form action="{{ url_for('add_comment', ticket_id=ticket.id) }}" method="post"><div class="mb-3"><label for="comment" class="form-label">Tu respuesta como agente <strong>{{ current_user.username }}</strong>:</label><textarea class="form-control" id="comment" name="comment" rows="5" required placeholder="Escribe tu respuesta aquí..."></textarea></div><button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button></form></div></div>{% endif %}
+
             </div>
         </div>
     </div>
-</div>
-<!-- Footer -->
-<footer class="bg-dark text-white py-4 mt-5">
-    <div class="container text-center">
-        <p class="mb-0">© 2024 Helpdesk Pro. Todos los derechos reservados.</p>
-    </div>
-</footer>
-</body>
-</html>
+{% endblock %}
