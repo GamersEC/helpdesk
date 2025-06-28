@@ -2,11 +2,19 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
-from datetime import datetime # Importante para la marca de tiempo
+from datetime import datetime
+import pytz
+
+#Definimos la zona horaria UTC para consistencia
+UTC = pytz.UTC
+
+def get_utc_now():
+    """Devuelve la fecha y hora actual en UTC, consciente de la zona horaria."""
+    return datetime.now(UTC)
 
 db = SQLAlchemy()
 
-# Modelo para los agentes/administradores (sin cambios)
+# Modelo para los agentes/administradores
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -19,20 +27,18 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-# --- NUEVO MODELO PARA LOS COMENTARIOS ---
+# Modelo para los comentarios
 class Comment(db.Model):
     __tablename__ = 'comments'
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=get_utc_now)
     author_name = db.Column(db.String(100), nullable=False)
-    author_type = db.Column(db.String(20), nullable=False, default='Agent')
-
-    # Clave foránea para vincular el comentario a un ticket
+    author_type = db.Column(db.String(20), nullable=False)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
 
 
-# Modelo de Ticket actualizado
+# Modelo de Ticket actualizado con campos para auto-cierre
 class Ticket(db.Model):
     __tablename__ = 'ticket'
     id = db.Column(db.Integer, primary_key=True)
@@ -44,6 +50,8 @@ class Ticket(db.Model):
     status = db.Column(db.String(20), default='Abierto', nullable=False)
     priority = db.Column(db.String(20), default='Baja', nullable=False)
 
-    # --- RELACIÓN AÑADIDA ---
-    # Vincula los tickets con los comentarios, asegurando que se ordenen por fecha.
+    # --- COLUMNAS MODIFICADAS PARA AUTO-CIERRE CON ZONAS HORARIAS ---
+    last_updated = db.Column(db.DateTime(timezone=True), default=get_utc_now, onupdate=get_utc_now)
+    last_updated_by_type = db.Column(db.String(20), nullable=False, default='Customer')
+
     comments = db.relationship('Comment', backref='ticket', lazy=True, order_by='Comment.timestamp')

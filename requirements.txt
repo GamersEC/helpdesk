@@ -4,3 +4,4 @@ psycopg2-binary
 Flask-Login
 Flask-Mail
 Werkzeug
+pytz
