@@ -17,11 +17,11 @@ Un sistema de helpdesk basado en Flask, diseñado para la gestión de tickets de
 
 ## 🚀 Tecnologías utilizadas
 
-- Python 3
+- Python
 - Flask
 - SQLAlchemy
 - Flask-Login
 - Flask-Mail
 - PostgreSQL
 - Bootstrap (para la interfaz)
-- Docker (opcional, recomendado para despliegue)
+- Docker
