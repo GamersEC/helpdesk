@@ -103,3 +103,16 @@ body {
         border-radius: 12px;
     }
 }
+
+
+/* === NUEVO ESTILO PARA BOTONES DE ACCIÓN CIRCULARES === */
+.btn-action {
+    width: 38px;       /* Ancho fijo */
+    height: 38px;      /* Alto fijo, igual al ancho para hacerlo cuadrado */
+    border-radius: 50%; /* Esto lo convierte en un círculo perfecto */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;        /* Quitamos el padding por defecto para un control total */
+    font-size: 1.1rem; /* Hacemos el icono un poco más grande */
+}
