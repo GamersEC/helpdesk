@@ -4,11 +4,8 @@ import shutil
 import string
 from io import BytesIO
 from functools import wraps
-from flask import (
-    Flask, render_template, request, redirect,
-    url_for, flash, session, send_from_directory, send_file
-)
-from sqlalchemy import case # <-- ¡NUEVA IMPORTACIÓN!
+from flask import (Flask, render_template, request, redirect,url_for, flash, session, send_from_directory, send_file)
+from sqlalchemy import case
 from models import db, Ticket, User, Comment, Attachment, get_utc_now
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
