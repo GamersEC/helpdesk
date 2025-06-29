@@ -1,4 +1,4 @@
-# Helpdesk Ticket System
+# Helpdesk Pro
 
 Un sistema de helpdesk basado en Flask, diseñado para la gestión de tickets de soporte. Permite a los clientes crear tickets con adjuntos, seguir su estado, y a los agentes gestionarlos desde un panel de administración.
 
