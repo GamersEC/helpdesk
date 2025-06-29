@@ -68,7 +68,18 @@
                 </thead>
                 <tbody>
                 {% for ticket in tickets %}
-                    <tr class="{% if ticket.priority == 'Alta' and ticket.status == 'Abierto' %}table-warning{% endif %}">
+                    <!-- === LÓGICA DE COLOREADO DE FILA MODIFICADA === -->
+                    <tr class="
+                        {% if ticket.status == 'Cerrado' %}
+                            table-secondary
+                        {% elif ticket.priority == 'Alta' %}
+                            table-danger
+                        {% elif ticket.priority == 'Media' %}
+                            table-warning
+                        {% elif ticket.priority == 'Baja' %}
+                            table-success
+                        {% endif %}
+                    ">
                         <td class="px-4 py-3 align-middle"><span class="badge bg-light text-dark">#{{ ticket.id }}</span></td>
                         <td class="px-4 py-3 align-middle"><div class="fw-semibold">{{ ticket.title }}</div><div class="text-muted small">{{ ticket.description[:50] }}{% if ticket.description|length > 50 %}...{% endif %}</div></td>
                         <td class="px-4 py-3 align-middle"><div class="fw-semibold">{{ ticket.customer_name }}</div><span class="text-muted small">{{ ticket.customer_email }}</span></td>
@@ -80,7 +91,9 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3 align-middle">
-                            {% if ticket.status == 'Abierto' %}<span class="badge badge-custom bg-success"><i class="bi bi-check-circle me-1"></i>{{ ticket.status }}</span>{% else %}<span class="badge badge-custom bg-danger"><i class="bi bi-x-circle me-1"></i>{{ ticket.status }}</span>{% endif %}
+                            {% if ticket.status == 'Abierto' %}<span class="badge badge-custom bg-light text-success border border-success"><i class="bi bi-check-circle me-1"></i>{{ ticket.status }}</span>
+                            {% else %}<span class="badge badge-custom bg-light text-danger border border-danger"><i class="bi bi-x-circle me-1"></i>{{ ticket.status }}</span>
+                            {% endif %}
                             <div class="mt-1">
                                 {% if ticket.priority == 'Alta' %}<span class="badge rounded-pill bg-danger text-white">Alta</span>
                                 {% elif ticket.priority == 'Media' %}<span class="badge rounded-pill bg-warning text-dark">Media</span>
