@@ -36,8 +36,14 @@ class Comment(db.Model):
     author_type = db.Column(db.String(20), nullable=False)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
 
+#Modelo para los archivos adjuntos
+class Attachment(db.Model):
+    __tablename__ = 'attachments'
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(256), nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
 
-#Modelo de Ticket actualizado con campos para auto cierre
+#Modelo de Ticket actualizado
 class Ticket(db.Model):
     __tablename__ = 'ticket'
     id = db.Column(db.Integer, primary_key=True)
@@ -48,9 +54,11 @@ class Ticket(db.Model):
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default='Abierto', nullable=False)
     priority = db.Column(db.String(20), default='Baja', nullable=False)
-
-    #Columnas para el auto-cierre
     last_updated = db.Column(db.DateTime(timezone=True), default=get_utc_now, onupdate=get_utc_now)
     last_updated_by_type = db.Column(db.String(20), nullable=False, default='Customer')
 
     comments = db.relationship('Comment', backref='ticket', lazy=True, order_by='Comment.timestamp')
+
+    #Relacion con archivos adjuntos
+    #cascade="all, delete-orphan" asegura que si se borra un ticket, sus adjuntos también se borren.
+    attachments = db.relationship('Attachment', backref='ticket', lazy=True, cascade="all, delete-orphan")

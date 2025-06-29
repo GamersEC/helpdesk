@@ -47,72 +47,92 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
-
-                <!-- Historial de Conversación -->
-                <h4 class="mb-3">Historial de la Conversación</h4>
-
-                <!-- Mensaje Original del Cliente -->
-                <div class="card card-custom mb-3">
-                    <div class="card-body">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1"><i class="bi bi-person-circle me-2"></i>{{ ticket.customer_name }} (Cliente)</h5>
-                            <small class="text-muted">{{ ticket.last_updated | local_time }}</small>
-                        </div>
-                        <hr>
-                        <p class="mb-1" style="white-space: pre-wrap;">{{ ticket.description }}</p>
+                    <div class="card-body p-4">
+                        <p class="mb-2"><i class="bi bi-person-fill me-2 text-primary"></i><strong>Nombre:</strong> {{ ticket.customer_name }}</p>
+                        <p class="mb-2"><i class="bi bi-envelope me-2 text-primary"></i><strong>Email:</strong> {{ ticket.customer_email }}</p>
+                        <p class="mb-2"><i class="bi bi-exclamation-triangle me-2 text-primary"></i><strong>Prioridad:</strong> {{ ticket.priority }}</p>
                     </div>
                 </div>
 
-                <!-- Comentarios Anteriores -->
-                {% for comment in ticket.comments %}
-                    <div class="card card-custom mb-3 {% if comment.author_type == 'Agent' %}border-start border-primary border-4{% else %}border-start border-secondary border-4{% endif %}">
+                <!-- Sección de Archivos Adjuntos -->
+                {% if ticket.attachments %}
+                    <div class="card card-custom mb-4">
+                        <div class="card-header bg-light">
+                            <h5><i class="bi bi-images me-2"></i>Archivos Adjuntos</h5>
+                        </div>
                         <div class="card-body">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1">
-                                    {% if comment.author_type == 'Agent' %}
-                                        <i class="bi bi-headset me-2 text-primary"></i>{{ comment.author_name }} (Agente)
-                                    {% else %}
-                                        <i class="bi bi-person-circle me-2"></i>{{ comment.author_name }} (Cliente)
-                                    {% endif %}
-                                </h5>
-                                <!-- LÍNEA CORREGIDA PARA USAR EL FILTRO -->
-                                <small class="text-muted">{{ comment.timestamp | local_time }}</small>
+                            <div class="row">
+                                {% for attachment in ticket.attachments %}
+                                    <div class="col-md-4 col-sm-6 mb-3">
+                                        <a href="{{ url_for('uploaded_file', ticket_id=ticket.id, filename=attachment.filename) }}" target="_blank" title="Ver imagen completa: {{ attachment.filename }}">
+                                            <img src="{{ url_for('uploaded_file', ticket_id=ticket.id, filename=attachment.filename) }}"
+                                                 class="img-fluid rounded shadow-sm"
+                                                 alt="Adjunto {{ loop.index }}"
+                                                 style="height: 150px; width: 100%; object-fit: cover;">
+                                        </a>
+                                    </div>
+                                {% endfor %}
                             </div>
-                            <hr>
-                            <p class="mb-1" style="white-space: pre-wrap;">{{ comment.content }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
-
-                <!-- Formulario para Responder (AGENTE) -->
-                {% if current_user.is_authenticated and ticket.status == 'Abierto' %}
-                    <div class="card card-custom mt-4">
-                        <div class="card-header bg-light"><h5><i class="bi bi-pencil-square me-2"></i>Añadir una Respuesta</h5></div>
-                        <div class="card-body">
-                            <form action="{{ url_for('add_comment', ticket_id=ticket.id) }}" method="post">
-                                <div class="mb-3">
-                                    <label for="comment" class="form-label">Tu respuesta como agente <strong>{{ current_user.username }}</strong>:</label>
-                                    <textarea class="form-control" id="comment" name="comment" rows="5" required placeholder="Escribe tu respuesta aquí..."></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button>
-                            </form>
                         </div>
                     </div>
                 {% endif %}
 
-                <!-- Formulario para Responder (CLIENTE) -->
-                {% if not current_user.is_authenticated and ticket.status == 'Abierto' %}
-                    <div class="card card-custom mt-4">
-                        <div class="card-header bg-light"><h5><i class="bi bi-pencil-square me-2"></i>Añadir una Respuesta</h5></div>
-                        <div class="card-body">
-                            <form action="{{ url_for('reply_ticket', tracking_id=ticket.tracking_id) }}" method="post">
-                                <div class="mb-3">
-                                    <label for="reply" class="form-label">Tu respuesta como <strong>{{ ticket.customer_name }}</strong>:</label>
-                                    <textarea class="form-control" id="reply" name="reply" rows="5" required placeholder="Escribe tu respuesta aquí..."></textarea>
+                <!-- Historial de Conversación -->
+                <div class="card card-custom mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-2 text-primary"></i>Historial de la Conversación</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4 p-3 rounded border border-secondary">
+                            <div class="d-flex justify-content-between mb-2">
+                                <strong><i class="bi bi-person-fill me-2 text-primary"></i>{{ ticket.customer_name }} (Cliente)</strong>
+                                <small class="text-muted">{{ ticket.last_updated | local_time }}</small>
+                            </div>
+                            <p class="mb-0" style="white-space: pre-wrap;">{{ ticket.description }}</p>
+                        </div>
+
+                        {% for comment in ticket.comments %}
+                            <div class="mb-4 p-3 rounded border {% if comment.author_type == 'Agent' %}border-primary{% else %}border-secondary{% endif %}">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong>
+                                        {% if comment.author_type == 'Agent' %}
+                                            <i class="bi bi-headset me-2 text-primary"></i>{{ comment.author_name }} (Agente)
+                                        {% else %}
+                                            <i class="bi bi-person-fill me-2 text-primary"></i>{{ comment.author_name }} (Cliente)
+                                        {% endif %}
+                                    </strong>
+                                    <small class="text-muted">{{ comment.timestamp | local_time }}</small>
                                 </div>
-                                <button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button>
-                            </form>
+                                <p class="mb-0" style="white-space: pre-wrap;">{{ comment.content }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Formularios de Respuesta -->
+                {% if ticket.status == "Abierto" %}
+                    <div class="card card-custom mb-4">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-reply me-2 text-primary"></i>Añadir una Respuesta</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if current_user.is_authenticated %}
+                                <form method="post" action="{{ url_for('add_comment', ticket_id=ticket.id) }}">
+                                    <div class="mb-3">
+                                        <label for="comment" class="form-label fw-semibold">Tu respuesta como agente {{ current_user.username }}:</label>
+                                        <textarea name="comment" id="comment" class="form-control" rows="5" required placeholder="Escribe tu respuesta..."></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{{ url_for('reply_ticket', tracking_id=ticket.tracking_id) }}">
+                                    <div class="mb-3">
+                                        <label for="reply" class="form-label fw-semibold">Tu respuesta como {{ ticket.customer_name }}:</label>
+                                        <textarea name="reply" id="reply" class="form-control" rows="5" required placeholder="Escribe tu respuesta..."></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button>
+                                </form>
+                            {% endif %}
                         </div>
                     </div>
                 {% endif %}

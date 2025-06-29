@@ -1,19 +1,30 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
-from models import db, Ticket, User, Comment, get_utc_now
+import random
+import shutil
+import string
+from io import BytesIO
+from flask import (
+    Flask, render_template, request, redirect,
+    url_for, flash, session, send_from_directory, send_file
+)
+from models import db, Ticket, User, Comment, Attachment, get_utc_now
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
 from datetime import timedelta
 import pytz
+from werkzeug.utils import secure_filename
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 app = Flask(__name__)
 
-#Configuración
+#Configuracion
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'una-clave-secreta-muy-dificil-de-adivinar')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://helpdesk:helpdesk123@db:5432/helpdesk_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-#Configuración de Flask-Mail
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
@@ -21,7 +32,7 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'tu_email@gmail.co
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'tu_contraseña_de_aplicacion')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'tu_email@gmail.com')
 
-#Inicializar las extensiones
+#Inicialización de extensiones
 db.init_app(app)
 mail = Mail(app)
 login_manager = LoginManager()
@@ -35,24 +46,22 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-#Filtro de plantilla para obtener la fecha y hora actual en UTC
+#Filtros y funciones auxiliares
 @app.template_filter('local_time')
 def format_datetime_local(utc_dt):
-    """Convierte una fecha UTC a la zona horaria local definida en .env."""
     if not utc_dt:
         return ""
-    #Obtener la zona horaria desde el .env, con 'UTC' como valor por defecto
     local_tz_name = os.environ.get('APP_TIMEZONE', 'UTC')
     try:
         local_tz = pytz.timezone(local_tz_name)
     except pytz.UnknownTimeZoneError:
         local_tz = pytz.utc
-
     local_dt = utc_dt.astimezone(local_tz)
     return local_dt.strftime('%d-%m-%Y %H:%M %Z')
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-#Funcion auxiliar para el auto cierro de tickets
 def auto_close_inactive_tickets():
     print("Checking for inactive tickets to auto-close...")
     time_limit = get_utc_now() - timedelta(days=3)
@@ -67,15 +76,57 @@ def auto_close_inactive_tickets():
         ticket.status = 'Cerrado'
         system_comment = Comment(
             content="Este ticket ha sido cerrado automáticamente después de 72 horas de inactividad.",
-            ticket_id=ticket.id,
-            author_name="Sistema",
-            author_type="Agent"
+            ticket_id=ticket.id, author_name="Sistema", author_type="Agent"
         )
         db.session.add(system_comment)
     db.session.commit()
     print(f"Auto-closed {len(tickets_to_close)} ticket(s).")
     return len(tickets_to_close)
 
+def cleanup_old_attachments():
+    print("Checking for old attachments to clean up...")
+    cleanup_limit = get_utc_now() - timedelta(days=7)
+    tickets_to_clean = Ticket.query.filter(
+        Ticket.status == 'Cerrado',
+        Ticket.last_updated < cleanup_limit,
+        Ticket.attachments.any()
+    ).all()
+    cleaned_count = 0
+    for ticket in tickets_to_clean:
+        ticket_upload_path = os.path.join(app.config['UPLOAD_FOLDER'], str(ticket.id))
+        if os.path.exists(ticket_upload_path):
+            try:
+                shutil.rmtree(ticket_upload_path)
+                print(f"Deleted attachment folder: {ticket_upload_path}")
+                cleaned_count += 1
+            except OSError as e:
+                print(f"Error deleting folder {ticket_upload_path}: {e.strerror}")
+        for attachment in ticket.attachments:
+            db.session.delete(attachment)
+    db.session.commit()
+    return cleaned_count
+
+#Ruta del captcha
+@app.route('/captcha')
+def captcha_image():
+    captcha_text = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    session['captcha_code'] = captcha_text
+    image = Image.new('RGB', (150, 50), (240, 240, 240))
+    draw = ImageDraw.Draw(image)
+    try:
+        font_path = os.path.join(app.root_path, 'assets', 'Roboto-Regular.ttf')
+        font = ImageFont.truetype(font_path, 36)
+    except IOError:
+        font = ImageFont.load_default()
+    for i, char in enumerate(captcha_text):
+        draw.text((10 + i * 35 + random.randint(-5, 5), random.randint(-5, 5)), char, font=font, fill=(50, 50, 50))
+    for _ in range(5):
+        draw.line(((random.randint(0, 150), random.randint(0, 50)), (random.randint(0, 150), random.randint(0, 50))), fill=(150, 150, 150), width=1)
+    image = image.filter(ImageFilter.GaussianBlur(1))
+    buffer = BytesIO()
+    image.save(buffer, 'PNG')
+    buffer.seek(0)
+    return send_file(buffer, mimetype='image/png')
 
 #Rutas publicas
 @app.route('/')
@@ -85,6 +136,18 @@ def home():
 @app.route('/new', methods=['GET', 'POST'])
 def new_ticket():
     if request.method == 'POST':
+        captcha_answer = request.form.get('captcha', '').strip().upper()
+        if 'captcha_code' not in session or not captcha_answer or captcha_answer != session['captcha_code']:
+            flash('El código de verificación es incorrecto.', 'danger')
+            return redirect(url_for('new_ticket'))
+        files = request.files.getlist('attachments')
+        if len(files) > 2:
+            flash('No puedes subir más de 2 imágenes.', 'danger')
+            return redirect(url_for('new_ticket'))
+        for file in files:
+            if file and not allowed_file(file.filename):
+                flash('Solo se permiten imágenes (png, jpg, jpeg, gif).', 'danger')
+                return redirect(url_for('new_ticket'))
         customer_name = request.form['name']
         title = request.form['title']
         description = request.form['description']
@@ -96,7 +159,17 @@ def new_ticket():
             last_updated_by_type='Customer', last_updated=get_utc_now()
         )
         db.session.add(new_ticket_obj)
+        db.session.flush()
+        for file in files:
+            if file:
+                filename = secure_filename(file.filename)
+                ticket_upload_path = os.path.join(app.config['UPLOAD_FOLDER'], str(new_ticket_obj.id))
+                os.makedirs(ticket_upload_path, exist_ok=True)
+                file.save(os.path.join(ticket_upload_path, filename))
+                attachment = Attachment(filename=filename, ticket_id=new_ticket_obj.id)
+                db.session.add(attachment)
         db.session.commit()
+        session.pop('captcha_code', None)
         try:
             send_tracking_email(new_ticket_obj)
             flash(f'¡Gracias {customer_name}, tu ticket fue creado con éxito!', 'success')
@@ -106,9 +179,23 @@ def new_ticket():
         return redirect(url_for('ticket_created_success', tracking_id=new_ticket_obj.tracking_id))
     return render_template('new_ticket.html')
 
+#Ruta para servir archivos adjuntos de tickets
+@app.route('/uploads/<int:ticket_id>/<filename>')
+def uploaded_file(ticket_id, filename):
+    if current_user.is_authenticated:
+        ticket_upload_path = os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER'], str(ticket_id))
+        return send_from_directory(ticket_upload_path, filename)
+    if 'viewed_ticket_id' in session and session['viewed_ticket_id'] == ticket_id:
+        ticket_upload_path = os.path.join(os.getcwd(), app.config['UPLOAD_FOLDER'], str(ticket_id))
+        return send_from_directory(ticket_upload_path, filename)
+    flash('No tienes permiso para ver este archivo.', 'danger')
+    return redirect(url_for('home'))
+
+#Ruta para guardar el ID del ticket en la sesión
 @app.route('/ticket/<tracking_id>')
 def track_ticket(tracking_id):
     ticket = Ticket.query.filter_by(tracking_id=tracking_id).first_or_404()
+    session['viewed_ticket_id'] = ticket.id
     return render_template('ticket_view.html', ticket=ticket)
 
 @app.route('/ticket/<tracking_id>/reply', methods=['POST'])
@@ -152,8 +239,11 @@ def ticket_created_success(tracking_id):
 @login_required
 def dashboard():
     closed_count = auto_close_inactive_tickets()
+    cleaned_count = cleanup_old_attachments()
     if closed_count > 0:
-        flash(f'{closed_count} ticket(s) han sido cerrados automáticamente por inactividad.', 'info')
+        flash(f'{closed_count} ticket(s) han sido cerrados automáticamente.', 'info')
+    if cleaned_count > 0:
+        flash(f'Se han limpiado los adjuntos de {cleaned_count} ticket(s) antiguos.', 'secondary')
     tickets = Ticket.query.order_by(Ticket.id.desc()).all()
     return render_template('index.html', tickets=tickets)
 
@@ -202,7 +292,6 @@ def close_ticket(ticket_id):
     flash(f'Ticket #{ticket.id} ha sido cerrado.', 'success')
     return redirect(url_for('dashboard'))
 
-#Funciones auxiliares para la gestión de tickets
 def send_tracking_email(ticket):
     subject = f"Tu ticket de soporte [#{ticket.id}] ha sido creado"
     tracking_url = url_for('track_ticket', tracking_id=ticket.tracking_id, _external=True)
@@ -216,16 +305,14 @@ with app.app_context():
     admin_user = os.environ.get('ADMIN_USERNAME')
     admin_pass = os.environ.get('ADMIN_PASSWORD')
     if admin_user and admin_pass and not User.query.filter_by(username=admin_user).first():
-        print(f"Creating admin user '{admin_user}'...")
         new_admin = User(username=admin_user)
         new_admin.set_password(admin_pass)
         db.session.add(new_admin)
         db.session.commit()
-        print("Admin user created.")
+        print(f"Admin user '{admin_user}' creado con éxito.")
 
 @app.cli.command("create-admin")
 def create_admin(username, password):
-    """Crea un nuevo usuario administrador."""
     if User.query.filter_by(username=username).first():
         print(f"El usuario '{username}' ya existe.")
         return
