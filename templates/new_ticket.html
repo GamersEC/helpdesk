@@ -34,25 +34,25 @@
                         <form id="ticketForm" action="{{ url_for('new_ticket') }}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                             <!-- Campos anteriores (nombre, email, título, descripción, prioridad, adjuntos) -->
                             <div class="mb-4">
-                                <label for="name" class="form-label fw-semibold"><i class="bi bi-person-fill text-primary me-2"></i>Tu Nombre</label>
-                                <input type="text" id="name" name="name" class="form-control form-control-lg form-control-custom" required placeholder="Tu Nombre Completo">
+                                <label for="name" class="form-label fw-semibold"><i class="bi bi-person-fill text-primary me-2"></i>Nombre Completo</label>
+                                <input type="text" id="name" name="name" class="form-control form-control-lg form-control-custom" required placeholder="Juanito Perez">
                                 <div class="invalid-feedback">Por favor, ingresa tu nombre.</div>
                             </div>
 
                             <div class="mb-4">
-                                <label for="email" class="form-label fw-semibold"><i class="bi bi-envelope-at text-primary me-2"></i>Tu Correo Electrónico</label>
+                                <label for="email" class="form-label fw-semibold"><i class="bi bi-envelope-at text-primary me-2"></i>orreo Electrónico</label>
                                 <input type="email" id="email" name="email" class="form-control form-control-lg form-control-custom" required placeholder="tu.correo@ejemplo.com">
                                 <div class="invalid-feedback">Por favor, ingresa un correo válido.</div>
                             </div>
 
                             <div class="mb-4">
                                 <label for="title" class="form-label fw-semibold"><i class="bi bi-type text-primary me-2"></i>Título del Ticket</label>
-                                <input type="text" id="title" name="title" class="form-control form-control-lg form-control-custom" required maxlength="100" placeholder="Describe brevemente tu problema...">
+                                <input type="text" id="title" name="title" class="form-control form-control-lg form-control-custom" required maxlength="100" placeholder="No puedo acceder a mi cuenta">
                                 <div class="invalid-feedback">Por favor, ingresa un título.</div>
                             </div>
 
                             <div class="mb-4">
-                                <label for="description" class="form-label fw-semibold"><i class="bi bi-chat-text text-primary me-2"></i>Descripción Detallada</label>
+                                <label for="description" class="form-label fw-semibold"><i class="bi bi-chat-text text-primary me-2"></i>Descripción</label>
                                 <textarea id="description" name="description" class="form-control form-control-custom" rows="6" required placeholder="Describe detalladamente tu problema..."></textarea>
                                 <div class="invalid-feedback">Por favor, proporciona una descripción.</div>
                             </div>

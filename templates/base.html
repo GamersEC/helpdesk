@@ -21,7 +21,7 @@
     </style>
 </head>
 <body>
-<!-- Navbar con Buscador -->
+<!-- Navbar con Buscador y Botón Condicional para Agentes -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-0">
     <div class="container">
         <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">
@@ -38,6 +38,17 @@
                     </a>
                 </li>
             </ul>
+
+            <!-- === NUEVO BOTÓN CONDICIONAL PARA AGENTES === -->
+            <!-- Este bloque solo se renderizará si hay un usuario autenticado (un agente) -->
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-light me-3">
+                    <i class="bi bi-arrow-left-circle me-1"></i>
+                    Volver al Dashboard
+                </a>
+            {% endif %}
+
+            <!-- Formulario de Búsqueda -->
             <form class="d-flex" role="search" action="{{ url_for('search_ticket') }}" method="post">
                 <input class="form-control me-2" type="search" name="tracking_id" placeholder="ID de seguimiento..." aria-label="Buscar Ticket" required>
                 <button class="btn btn-outline-light" type="submit">

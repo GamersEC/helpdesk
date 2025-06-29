@@ -7,135 +7,45 @@
         <div class="row justify-content-center">
             <div class="col-lg-9">
 
-                <!-- Mensajes Flash -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-
-                <!-- Alerta de Advertencia de Auto-Cierre -->
-                {% if ticket.status == 'Abierto' and ticket.last_updated_by_type == 'Agent' %}
-                    <div class="alert alert-warning d-flex align-items-center shadow-sm mb-4" role="alert">
-                        <i class="bi bi-hourglass-split fs-4 me-3"></i>
-                        <div>
-                            <strong>Atención:</strong> Este ticket se cerrará automáticamente si no recibimos una respuesta de tu parte en las próximas 72 horas. Si tu problema ya está resuelto, no necesitas hacer nada.
-                        </div>
-                    </div>
-                {% endif %}
+                <!-- Mensajes Flash y Alerta de Auto-Cierre -->
+                {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}{% endwith %}
+                {% if ticket.status == 'Abierto' and ticket.last_updated_by_type == 'Agent' %}<div class="alert alert-warning d-flex align-items-center shadow-sm mb-4" role="alert"><i class="bi bi-hourglass-split fs-4 me-3"></i><div><strong>Atención:</strong> Este ticket se cerrará automáticamente si no recibimos una respuesta de tu parte en las próximas 72 horas. Si tu problema ya está resuelto, no necesitas hacer nada.</div></div>{% endif %}
 
                 <!-- Detalles del Ticket -->
                 <div class="card card-custom mb-4">
                     <div class="card-header bg-white py-4 d-flex justify-content-between align-items-center flex-wrap">
                         <div>
-                            <h2 class="card-title mb-1 fw-bold">
-                                <i class="bi bi-ticket-detailed me-2 text-primary"></i>
-                                Ticket <span class="badge bg-light text-dark">#{{ ticket.id }}</span>
-                            </h2>
+                            <h2 class="card-title mb-1 fw-bold"><i class="bi bi-ticket-detailed me-2 text-primary"></i>Ticket <span class="badge bg-light text-dark">#{{ ticket.id }}</span></h2>
                             <p class="text-muted mb-0">{{ ticket.title }}</p>
                         </div>
-                        <div class="mt-2 mt-md-0">
-                            {% if ticket.status == 'Abierto' %}
-                                <span class="badge badge-custom bg-success fs-6"><i class="bi bi-check-circle me-1"></i>{{ ticket.status }}</span>
-                            {% else %}
-                                <span class="badge badge-custom bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>{{ ticket.status }}</span>
-                            {% endif %}
-                        </div>
+                        <div class="mt-2 mt-md-0">{% if ticket.status == 'Abierto' %}<span class="badge badge-custom bg-success fs-6"><i class="bi bi-check-circle me-1"></i>{{ ticket.status }}</span>{% else %}<span class="badge badge-custom bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>{{ ticket.status }}</span>{% endif %}</div>
                     </div>
                     <div class="card-body p-4">
                         <p class="mb-2"><i class="bi bi-person-fill me-2 text-primary"></i><strong>Nombre:</strong> {{ ticket.customer_name }}</p>
                         <p class="mb-2"><i class="bi bi-envelope me-2 text-primary"></i><strong>Email:</strong> {{ ticket.customer_email }}</p>
-                        <p class="mb-2"><i class="bi bi-exclamation-triangle me-2 text-primary"></i><strong>Prioridad:</strong> {{ ticket.priority }}</p>
+                        <p class="mb-2 d-flex align-items-center"><i class="bi bi-exclamation-triangle me-2 text-primary"></i><strong>Prioridad:</strong>
+                            <span class="ms-2">
+                            {% if ticket.priority == 'Alta' %}<span class="badge fs-6 rounded-pill bg-danger text-white">Alta</span>
+                            {% elif ticket.priority == 'Media' %}<span class="badge fs-6 rounded-pill bg-warning text-dark">Media</span>
+                            {% else %}<span class="badge fs-6 rounded-pill bg-success text-white">Baja</span>
+                            {% endif %}
+                        </span>
+                        </p>
+                        <p class="mb-0"><i class="bi bi-person-check-fill me-2 text-primary"></i><strong>Agente Asignado:</strong> {% if ticket.assigned_agent %}{{ ticket.assigned_agent.username }}{% else %}<span class="text-muted">Ninguno</span>{% endif %}</p>
                     </div>
                 </div>
 
-                <!-- Sección de Archivos Adjuntos -->
-                {% if ticket.attachments %}
-                    <div class="card card-custom mb-4">
-                        <div class="card-header bg-light">
-                            <h5><i class="bi bi-images me-2"></i>Archivos Adjuntos</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                {% for attachment in ticket.attachments %}
-                                    <div class="col-md-4 col-sm-6 mb-3">
-                                        <a href="{{ url_for('uploaded_file', ticket_id=ticket.id, filename=attachment.filename) }}" target="_blank" title="Ver imagen completa: {{ attachment.filename }}">
-                                            <img src="{{ url_for('uploaded_file', ticket_id=ticket.id, filename=attachment.filename) }}"
-                                                 class="img-fluid rounded shadow-sm"
-                                                 alt="Adjunto {{ loop.index }}"
-                                                 style="height: 150px; width: 100%; object-fit: cover;">
-                                        </a>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
+                <!-- Archivos Adjuntos -->
+                {% if ticket.attachments %}<div class="card card-custom mb-4"><div class="card-header bg-light"><h5><i class="bi bi-images me-2"></i>Archivos Adjuntos</h5></div><div class="card-body"><div class="row">{% for attachment in ticket.attachments %}<div class="col-md-4 col-sm-6 mb-3"><a href="{{ url_for('uploaded_file', ticket_id=ticket.id, filename=attachment.filename) }}" target="_blank" title="Ver imagen completa: {{ attachment.filename }}"><img src="{{ url_for('uploaded_file', ticket_id=ticket.id, filename=attachment.filename) }}" class="img-fluid rounded shadow-sm" alt="Adjunto {{ loop.index }}" style="height: 150px; width: 100%; object-fit: cover;"></a></div>{% endfor %}</div></div></div>{% endif %}
 
                 <!-- Historial de Conversación -->
-                <div class="card card-custom mb-4">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-2 text-primary"></i>Historial de la Conversación</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-4 p-3 rounded border border-secondary">
-                            <div class="d-flex justify-content-between mb-2">
-                                <strong><i class="bi bi-person-fill me-2 text-primary"></i>{{ ticket.customer_name }} (Cliente)</strong>
-                                <small class="text-muted">{{ ticket.last_updated | local_time }}</small>
-                            </div>
-                            <p class="mb-0" style="white-space: pre-wrap;">{{ ticket.description }}</p>
-                        </div>
-
-                        {% for comment in ticket.comments %}
-                            <div class="mb-4 p-3 rounded border {% if comment.author_type == 'Agent' %}border-primary{% else %}border-secondary{% endif %}">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <strong>
-                                        {% if comment.author_type == 'Agent' %}
-                                            <i class="bi bi-headset me-2 text-primary"></i>{{ comment.author_name }} (Agente)
-                                        {% else %}
-                                            <i class="bi bi-person-fill me-2 text-primary"></i>{{ comment.author_name }} (Cliente)
-                                        {% endif %}
-                                    </strong>
-                                    <small class="text-muted">{{ comment.timestamp | local_time }}</small>
-                                </div>
-                                <p class="mb-0" style="white-space: pre-wrap;">{{ comment.content }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
+                <div class="card card-custom mb-4"><div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-2 text-primary"></i>Historial de la Conversación</h5></div><div class="card-body"><div class="mb-4 p-3 rounded border border-secondary"><div class="d-flex justify-content-between mb-2"><strong><i class="bi bi-person-fill me-2 text-primary"></i>{{ ticket.customer_name }} (Cliente)</strong><small class="text-muted">{{ ticket.last_updated | local_time }}</small></div><p class="mb-0" style="white-space: pre-wrap;">{{ ticket.description }}</p></div>{% for comment in ticket.comments %}<div class="mb-4 p-3 rounded border {% if comment.author_type == 'Agent' %}border-primary{% else %}border-secondary{% endif %}"><div class="d-flex justify-content-between mb-2"><strong>{% if comment.author_type == 'Agent' %}<i class="bi bi-headset me-2 text-primary"></i>{{ comment.author_name }} (Agente){% else %}<i class="bi bi-person-fill me-2 text-primary"></i>{{ comment.author_name }} (Cliente){% endif %}</strong><small class="text-muted">{{ comment.timestamp | local_time }}</small></div><p class="mb-0" style="white-space: pre-wrap;">{{ comment.content }}</p></div>{% endfor %}</div></div>
 
                 <!-- Formularios de Respuesta -->
-                {% if ticket.status == "Abierto" %}
-                    <div class="card card-custom mb-4">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold"><i class="bi bi-reply me-2 text-primary"></i>Añadir una Respuesta</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if current_user.is_authenticated %}
-                                <form method="post" action="{{ url_for('add_comment', ticket_id=ticket.id) }}">
-                                    <div class="mb-3">
-                                        <label for="comment" class="form-label fw-semibold">Tu respuesta como agente {{ current_user.username }}:</label>
-                                        <textarea name="comment" id="comment" class="form-control" rows="5" required placeholder="Escribe tu respuesta..."></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button>
-                                </form>
-                            {% else %}
-                                <form method="post" action="{{ url_for('reply_ticket', tracking_id=ticket.tracking_id) }}">
-                                    <div class="mb-3">
-                                        <label for="reply" class="form-label fw-semibold">Tu respuesta como {{ ticket.customer_name }}:</label>
-                                        <textarea name="reply" id="reply" class="form-control" rows="5" required placeholder="Escribe tu respuesta..."></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endif %}
+                {% if ticket.status == "Abierto" %}<div class="card card-custom mb-4"><div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="bi bi-reply me-2 text-primary"></i>Añadir una Respuesta</h5></div><div class="card-body">{% if current_user.is_authenticated %}<form method="post" action="{{ url_for('add_comment', ticket_id=ticket.id) }}"><div class="mb-3"><label for="comment" class="form-label fw-semibold">Tu respuesta como agente {{ current_user.username }}:</label><textarea name="comment" id="comment" class="form-control" rows="5" required placeholder="Escribe tu respuesta..."></textarea></div><button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button></form>{% else %}<form method="post" action="{{ url_for('reply_ticket', tracking_id=ticket.tracking_id) }}"><div class="mb-3"><label for="reply" class="form-label fw-semibold">Tu respuesta como {{ ticket.customer_name }}:</label><textarea name="reply" id="reply" class="form-control" rows="5" required placeholder="Escribe tu respuesta..."></textarea></div><button type="submit" class="btn btn-primary-custom"><i class="bi bi-send me-2"></i>Enviar Respuesta</button></form>{% endif %}</div></div>{% endif %}
+
+                <!-- Formulario de Reasignación (SOLO PARA ADMINS) -->
+                {% if current_user.is_authenticated and current_user.is_admin %}<div class="card card-custom mt-4"><div class="card-header bg-light"><h5><i class="bi bi-person-video2 me-2"></i>Asignar Ticket</h5></div><div class="card-body"><form action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}" method="post"><div class="input-group"><select name="agent_id" class="form-select"><option value="">-- Sin asignar --</option>{% for data in agents_data %}<option value="{{ data.agent.id }}" {% if ticket.assigned_agent_id == data.agent.id %}selected{% endif %}>{{ data.agent.username }} ({{ data.ticket_count }} tickets)</option>{% endfor %}</select><button class="btn btn-outline-primary" type="submit">Asignar</button></div></form></div></div>{% endif %}
 
             </div>
         </div>

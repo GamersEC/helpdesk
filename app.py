@@ -3,10 +3,12 @@ import random
 import shutil
 import string
 from io import BytesIO
+from functools import wraps
 from flask import (
     Flask, render_template, request, redirect,
     url_for, flash, session, send_from_directory, send_file
 )
+from sqlalchemy import case # <-- ¡NUEVA IMPORTACIÓN!
 from models import db, Ticket, User, Comment, Attachment, get_utc_now
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
@@ -32,7 +34,7 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'tu_email@gmail.co
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'tu_contraseña_de_aplicacion')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'tu_email@gmail.com')
 
-#Inicialización de extensiones
+#Inicializar extensiones
 db.init_app(app)
 mail = Mail(app)
 login_manager = LoginManager()
@@ -45,17 +47,24 @@ login_manager.login_message_category = "info"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+#Decorador de permisos de administrador
+def admin_required(f):
+    @wraps(f)
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_admin:
+            flash("No tienes permiso para acceder a esta página.", "danger")
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 #Filtros y funciones auxiliares
 @app.template_filter('local_time')
 def format_datetime_local(utc_dt):
-    if not utc_dt:
-        return ""
+    if not utc_dt: return ""
     local_tz_name = os.environ.get('APP_TIMEZONE', 'UTC')
-    try:
-        local_tz = pytz.timezone(local_tz_name)
-    except pytz.UnknownTimeZoneError:
-        local_tz = pytz.utc
+    try: local_tz = pytz.timezone(local_tz_name)
+    except pytz.UnknownTimeZoneError: local_tz = pytz.utc
     local_dt = utc_dt.astimezone(local_tz)
     return local_dt.strftime('%d-%m-%Y %H:%M %Z')
 
@@ -65,19 +74,11 @@ def allowed_file(filename):
 def auto_close_inactive_tickets():
     print("Checking for inactive tickets to auto-close...")
     time_limit = get_utc_now() - timedelta(days=3)
-    tickets_to_close = Ticket.query.filter(
-        Ticket.status == 'Abierto',
-        Ticket.last_updated_by_type == 'Agent',
-        Ticket.last_updated < time_limit
-    ).all()
-    if not tickets_to_close:
-        return 0
+    tickets_to_close = Ticket.query.filter(Ticket.status == 'Abierto', Ticket.last_updated_by_type == 'Agent', Ticket.last_updated < time_limit).all()
+    if not tickets_to_close: return 0
     for ticket in tickets_to_close:
         ticket.status = 'Cerrado'
-        system_comment = Comment(
-            content="Este ticket ha sido cerrado automáticamente después de 72 horas de inactividad.",
-            ticket_id=ticket.id, author_name="Sistema", author_type="Agent"
-        )
+        system_comment = Comment(content="Este ticket ha sido cerrado automáticamente después de 72 horas de inactividad.", ticket_id=ticket.id, author_name="Sistema", author_type="Agent")
         db.session.add(system_comment)
     db.session.commit()
     print(f"Auto-closed {len(tickets_to_close)} ticket(s).")
@@ -86,11 +87,7 @@ def auto_close_inactive_tickets():
 def cleanup_old_attachments():
     print("Checking for old attachments to clean up...")
     cleanup_limit = get_utc_now() - timedelta(days=7)
-    tickets_to_clean = Ticket.query.filter(
-        Ticket.status == 'Cerrado',
-        Ticket.last_updated < cleanup_limit,
-        Ticket.attachments.any()
-    ).all()
+    tickets_to_clean = Ticket.query.filter(Ticket.status == 'Cerrado', Ticket.last_updated < cleanup_limit, Ticket.attachments.any()).all()
     cleaned_count = 0
     for ticket in tickets_to_clean:
         ticket_upload_path = os.path.join(app.config['UPLOAD_FOLDER'], str(ticket.id))
@@ -179,7 +176,6 @@ def new_ticket():
         return redirect(url_for('ticket_created_success', tracking_id=new_ticket_obj.tracking_id))
     return render_template('new_ticket.html')
 
-#Ruta para servir archivos adjuntos de tickets
 @app.route('/uploads/<int:ticket_id>/<filename>')
 def uploaded_file(ticket_id, filename):
     if current_user.is_authenticated:
@@ -191,22 +187,24 @@ def uploaded_file(ticket_id, filename):
     flash('No tienes permiso para ver este archivo.', 'danger')
     return redirect(url_for('home'))
 
-#Ruta para guardar el ID del ticket en la sesión
 @app.route('/ticket/<tracking_id>')
 def track_ticket(tracking_id):
     ticket = Ticket.query.filter_by(tracking_id=tracking_id).first_or_404()
     session['viewed_ticket_id'] = ticket.id
-    return render_template('ticket_view.html', ticket=ticket)
+    agents_data = []
+    if current_user.is_authenticated:
+        all_agents = User.query.all()
+        for agent in all_agents:
+            ticket_count = Ticket.query.filter_by(assigned_agent_id=agent.id, status='Abierto').count()
+            agents_data.append({'agent': agent, 'ticket_count': ticket_count})
+    return render_template('ticket_view.html', ticket=ticket, agents_data=agents_data)
 
 @app.route('/ticket/<tracking_id>/reply', methods=['POST'])
 def reply_ticket(tracking_id):
     ticket = Ticket.query.filter_by(tracking_id=tracking_id).first_or_404()
     reply_text = request.form.get('reply')
     if reply_text:
-        new_comment = Comment(
-            content=reply_text, ticket_id=ticket.id,
-            author_name=ticket.customer_name, author_type='Customer'
-        )
+        new_comment = Comment(content=reply_text, ticket_id=ticket.id, author_name=ticket.customer_name, author_type='Customer')
         db.session.add(new_comment)
         ticket.last_updated_by_type = 'Customer'
         ticket.last_updated = get_utc_now()
@@ -234,7 +232,31 @@ def ticket_created_success(tracking_id):
     ticket_url = url_for('track_ticket', tracking_id=tracking_id, _external=True)
     return render_template('ticket_created_success.html', ticket_url=ticket_url)
 
-#Rutas de agente
+#Rutas de agente y administrador
+@app.route('/admin/agents', methods=['GET', 'POST'])
+@admin_required
+def manage_agents():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if not username or not password:
+            flash('El nombre de usuario y la contraseña son obligatorios.', 'danger')
+        elif User.query.filter_by(username=username).first():
+            flash('Ese nombre de usuario ya existe.', 'warning')
+        else:
+            new_agent = User(username=username, first_name=request.form.get('first_name'), last_name=request.form.get('last_name'))
+            new_agent.set_password(password)
+            db.session.add(new_agent)
+            db.session.commit()
+            flash(f'Agente "{username}" creado con éxito.', 'success')
+        return redirect(url_for('manage_agents'))
+    agents_with_counts = []
+    all_agents = User.query.all()
+    for agent in all_agents:
+        ticket_count = Ticket.query.filter_by(assigned_agent_id=agent.id, status='Abierto').count()
+        agents_with_counts.append({'agent': agent, 'ticket_count': ticket_count})
+    return render_template('manage_agents.html', agents_data=agents_with_counts)
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -244,7 +266,25 @@ def dashboard():
         flash(f'{closed_count} ticket(s) han sido cerrados automáticamente.', 'info')
     if cleaned_count > 0:
         flash(f'Se han limpiado los adjuntos de {cleaned_count} ticket(s) antiguos.', 'secondary')
-    tickets = Ticket.query.order_by(Ticket.id.desc()).all()
+
+    priority_order = case(
+        (Ticket.priority == 'Alta', 1),
+        (Ticket.priority == 'Media', 2),
+        (Ticket.priority == 'Baja', 3),
+        else_=4
+    )
+
+    if current_user.is_admin:
+        tickets = Ticket.query.order_by(
+            Ticket.status.asc(), priority_order.asc(), Ticket.last_updated.desc()
+        ).all()
+    else:
+        tickets = Ticket.query.filter(
+            (Ticket.assigned_agent_id == current_user.id) | (Ticket.assigned_agent_id == None)
+        ).order_by(
+            Ticket.status.asc(), priority_order.asc(), Ticket.last_updated.desc()
+        ).all()
+
     return render_template('index.html', tickets=tickets)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -266,12 +306,37 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/profile')
+@login_required
+def view_profile():
+    return render_template('profile.html', user=current_user, is_editable=False)
+
+@app.route('/admin/edit_agent/<int:user_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_agent(user_id):
+    agent_to_edit = User.query.get_or_404(user_id)
+    if request.method == 'POST':
+        agent_to_edit.first_name = request.form.get('first_name')
+        agent_to_edit.last_name = request.form.get('last_name')
+        agent_to_edit.username = request.form.get('username')
+        agent_to_edit.role = request.form.get('role')
+        new_password = request.form.get('password')
+        if new_password:
+            agent_to_edit.set_password(new_password)
+        db.session.commit()
+        flash(f'Perfil del agente {agent_to_edit.username} actualizado.', 'success')
+        return redirect(url_for('manage_agents'))
+    return render_template('profile.html', user=agent_to_edit, is_editable=True)
+
 @app.route('/ticket/<int:ticket_id>/comment', methods=['POST'])
 @login_required
 def add_comment(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     comment_text = request.form.get('comment')
     if comment_text:
+        if not ticket.assigned_agent_id:
+            ticket.assigned_agent_id = current_user.id
+            flash(f'Te has asignado automáticamente el ticket #{ticket.id}.', 'info')
         new_comment = Comment(content=comment_text, ticket_id=ticket.id, author_name=current_user.username, author_type='Agent')
         db.session.add(new_comment)
         ticket.last_updated_by_type = 'Agent'
@@ -280,6 +345,25 @@ def add_comment(ticket_id):
         flash('Tu respuesta ha sido añadida con éxito.', 'success')
     else:
         flash('No puedes enviar una respuesta vacía.', 'warning')
+    return redirect(url_for('track_ticket', tracking_id=ticket.tracking_id))
+
+@app.route('/ticket/<int:ticket_id>/assign', methods=['POST'])
+@admin_required
+def assign_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    agent_id = request.form.get('agent_id')
+    if agent_id:
+        agent = User.query.get(agent_id)
+        if agent:
+            ticket.assigned_agent_id = agent.id
+            db.session.commit()
+            flash(f'Ticket #{ticket.id} asignado a {agent.username}.', 'success')
+        else:
+            flash('El agente seleccionado no es válido.', 'danger')
+    else:
+        ticket.assigned_agent_id = None
+        db.session.commit()
+        flash(f'Ticket #{ticket.id} ha quedado sin asignar.', 'info')
     return redirect(url_for('track_ticket', tracking_id=ticket.tracking_id))
 
 @app.route('/ticket/<int:ticket_id>/close', methods=['POST'])
@@ -299,13 +383,13 @@ def send_tracking_email(ticket):
     msg.html = render_template('email/tracking_link.html', ticket=ticket, tracking_url=tracking_url)
     mail.send(msg)
 
-#Inicializar la app y la base de datos
+#Inicializacion de la app
 with app.app_context():
     db.create_all()
     admin_user = os.environ.get('ADMIN_USERNAME')
     admin_pass = os.environ.get('ADMIN_PASSWORD')
     if admin_user and admin_pass and not User.query.filter_by(username=admin_user).first():
-        new_admin = User(username=admin_user)
+        new_admin = User(username=admin_user, role='admin')
         new_admin.set_password(admin_pass)
         db.session.add(new_admin)
         db.session.commit()
