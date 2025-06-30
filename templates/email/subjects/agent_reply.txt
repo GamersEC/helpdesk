@@ -1,0 +1,1 @@
+Nueva Respuesta en tu Ticket [#{{ ticket.id }}]

@@ -1,0 +1,114 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Ver Todos los Tickets{% endblock %}
+
+{% block content %}
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 mb-0">Todos los Tickets del Sistema</h1>
+        </div>
+
+        <!-- Barra de Búsqueda y Filtros de Estado -->
+        <div class="card card-custom mb-4">
+            <div class="card-body">
+                <form method="get" action="{{ url_for('view_all_tickets') }}" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" name="query" class="form-control" placeholder="Buscar por ID, Título, Cliente, Tracking ID..." value="{{ query or '' }}">
+                        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Buscar</button>
+                        <a href="{{ url_for('view_all_tickets', status=status_filter) }}" class="btn btn-outline-secondary">Limpiar Búsqueda</a>
+                    </div>
+                    <input type="hidden" name="status" value="{{ status_filter or '' }}">
+                </form>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('view_all_tickets', status='Abierto', query=query) }}" class="btn btn-sm {{ 'btn-success' if status_filter == 'Abierto' else 'btn-outline-success' }}">
+                        <i class="bi bi-check-circle-fill me-1"></i>Abiertos
+                    </a>
+                    <a href="{{ url_for('view_all_tickets', status='Cerrado', query=query) }}" class="btn btn-sm {{ 'btn-dark' if status_filter == 'Cerrado' else 'btn-outline-dark' }}">
+                        <i class="bi bi-x-circle-fill me-1"></i>Cerrados
+                    </a>
+                    <a href="{{ url_for('view_all_tickets', query=query) }}" class="btn btn-sm {{ 'btn-info text-dark' if not status_filter else 'btn-outline-info' }}">
+                        <i class="bi bi-list-ul me-1"></i>Mostrar Todos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Tickets -->
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-ticket-detailed me-2"></i>Resultados de la Búsqueda</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if tickets %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">Título</th>
+                                <th class="p-3">Cliente</th>
+                                <th class="p-3">Área</th>
+                                <th class="p-3">Agente Asignado</th>
+                                <th class="p-3">Prioridad</th>
+                                <th class="p-3">Última Actualización</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for ticket in tickets %}
+                                <tr style="cursor: pointer;" onclick="window.location='{{ url_for('track_ticket', tracking_id=ticket.tracking_id) }}';">
+                                    <td class="p-3 fw-bold">#{{ ticket.id }}</td>
+                                    <td class="p-3">{{ ticket.title | truncate(40) }}</td>
+                                    <td class="p-3">{{ ticket.customer_name }}</td>
+                                    <td class="p-3"><span class="badge bg-info text-dark">{{ ticket.area.name }}</span></td>
+                                    <td class="p-3">
+                                        {% if ticket.assigned_agent %}
+                                            <span class="badge bg-secondary">{{ ticket.assigned_agent.username }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Sin Asignar</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-3">
+                                        {% if ticket.priority == 'Alta' %}
+                                            <span class="badge bg-danger">Alta</span>
+                                        {% elif ticket.priority == 'Media' %}
+                                            <span class="badge bg-warning text-dark">Media</span>
+                                        {% else %}
+                                            <span class="badge bg-info text-dark">Baja</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-3"><small class="text-muted">{{ ticket.last_updated | local_time }}</small></td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center p-4 text-muted">No se encontraron tickets con los filtros actuales.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        {% if pagination and pagination.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('view_all_tickets', page=pagination.prev_num, status=status_filter, query=query) }}">Anterior</a>
+                    </li>
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('view_all_tickets', page=page_num, status=status_filter, query=query) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('view_all_tickets', page=pagination.next_num, status=status_filter, query=query) }}">Siguiente</a>
+                    </li>
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+{% endblock %}

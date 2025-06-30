@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestionar Áreas - Helpdesk</title>
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+</head>
+<body>
+<!-- Navbar para Administradores/Agentes -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-0">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{{ url_for('dashboard') }}"><i class="bi bi-shield-check me-2"></i>Helpdesk - Panel</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-grid-1x2 me-1"></i>Dashboard</a></li>
+                {% if current_user.is_admin %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-gear-fill me-1"></i>Administración</a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('manage_agents') }}">Gestionar Agentes</a></li>
+                            <li><a class="dropdown-item active" href="{{ url_for('manage_areas') }}">Gestionar Áreas</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('manage_categories') }}">Gestionar Categorías</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('new_ticket') }}" target="_blank"><i class="bi bi-plus-circle me-1"></i>Crear Ticket</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-person-circle me-1"></i> {{ current_user.username }}</a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('view_profile') }}">Mi Perfil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}">Cerrar Sesión</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-5">
+    <h1 class="mb-4">Gestionar Áreas de Soporte</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}{% endwith %}
+    <div class="row">
+        <div class="col-md-4"><div class="card card-custom"><div class="card-header"><h5>Añadir Nueva Área</h5></div><div class="card-body"><form method="post" action="{{ url_for('manage_areas') }}"><div class="mb-3"><label for="name" class="form-label">Nombre del Área</label><input type="text" name="name" id="name" class="form-control" required></div><button type="submit" class="btn btn-primary-custom w-100">Crear Área</button></form></div></div></div>
+        <div class="col-md-8"><div class="card card-custom"><div class="card-header"><h5>Áreas Existentes</h5></div><div class="card-body p-0">{% if areas %}<div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th class="p-3">ID</th><th class="p-3">Nombre</th></tr></thead><tbody>{% for area in areas %}<tr><td class="p-3">{{ area.id }}</td><td class="p-3">{{ area.name }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="text-center p-4 text-muted">No hay áreas creadas.</p>{% endif %}</div></div></div>
+    </div>
+</div>
+
+<footer class="bg-dark text-white py-4 mt-5"><div class="container text-center"><p class="mb-0">© 2025 Helpdesk Pro. Todos los derechos reservados.</p></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

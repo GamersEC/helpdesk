@@ -1,0 +1,105 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Dashboard de Administrador{% endblock %}
+
+{% block content %}
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 mb-0">Dashboard de Administrador</h1>
+            <a href="{{ url_for('new_ticket') }}" class="btn btn-primary d-none d-md-inline-flex">
+                <i class="bi bi-plus-circle-fill me-2"></i>Crear Ticket Manualmente
+            </a>
+        </div>
+
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Tarjetas de Estadísticas Rápidas -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted">Tickets Abiertos</h5>
+                        <p class="card-text fs-1 fw-bold text-success">{{ stats.total_open }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center text-bg-warning h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Tickets Sin Asignar</h5>
+                        <p class="card-text fs-1 fw-bold">{{ stats.unassigned }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center text-bg-danger h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Prioridad Alta (Abiertos)</h5>
+                        <p class="card-text fs-1 fw-bold">{{ stats.high_priority }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actividad Reciente y Accesos Rápidos -->
+        <div class="row">
+            <div class="col-lg-7 mb-4">
+                <div class="card card-custom h-100">
+                    <div class="card-header"><h5><i class="bi bi-clock-history me-2"></i>Actividad Reciente del Sistema</h5></div>
+                    <div class="list-group list-group-flush">
+                        {% for activity in stats.recent_activity %}
+                            <div class="list-group-item">
+                            <span>
+                                <i class="bi bi-info-circle me-2 text-primary"></i>
+                                {{ activity.description }}
+                                <a href="{{ url_for('track_ticket', tracking_id=activity.ticket.tracking_id) }}" class="fw-semibold ms-1">(Ticket #{{ activity.ticket.id }})</a>
+                            </span>
+                                <small class="text-muted float-end" title="{{ activity.timestamp | local_time }}">{{ activity.timestamp | local_time }}</small>
+                            </div>
+                        {% else %}
+                            <div class="list-group-item">
+                                <p class="text-muted text-center my-2">No hay actividad reciente en el sistema.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5 mb-4">
+                <div class="card card-custom h-100">
+                    <div class="card-header"><h5><i class="bi bi-lightning-charge-fill me-2"></i>Accesos Rápidos</h5></div>
+                    <div class="list-group list-group-flush">
+
+                        <!-- === INICIO DE LA SECCIÓN CORREGIDA === -->
+                        <a href="{{ url_for('view_all_tickets', status='Abierto') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-ticket-detailed-fill me-2 text-primary"></i>Ver Todos los Tickets
+                        </a>
+                        <a href="{{ url_for('stats') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Ver Estadísticas
+                        </a>
+                        <a href="{{ url_for('manage_agents') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-people-fill me-2 text-primary"></i>Gestionar Usuarios
+                        </a>
+                        <a href="{{ url_for('manage_areas') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-diagram-3-fill me-2 text-primary"></i>Gestionar Áreas
+                        </a>
+                        <a href="{{ url_for('manage_categories') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-tags-fill me-2 text-primary"></i>Gestionar Categorías
+                        </a>
+                        <!-- === FIN DE LA SECCIÓN CORREGIDA === -->
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

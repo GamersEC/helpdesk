@@ -1,0 +1,56 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}Estadísticas{% endblock %}
+{% block head_extra %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+    <div class="container my-5">
+        <h1 class="mb-4">Estadísticas del Sistema</h1>
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card card-custom">
+                    <div class="card-header"><h5>Tickets por Categoría</h5></div>
+                    <div class="card-body"><canvas id="categoryChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card card-custom">
+                    <div class="card-header"><h5>Tickets por Área</h5></div>
+                    <div class="card-body"><canvas id="areaChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        const chartData = JSON.parse('{{ chart_data_json | safe }}');
+
+        // Gráfico de Categorías
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: chartData.category.labels,
+                datasets: [{
+                    label: 'Tickets',
+                    data: chartData.category.data,
+                    backgroundColor: ['#5a47ea', '#34d399', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'],
+                }]
+            },
+        });
+
+        // Gráfico de Áreas
+        new Chart(document.getElementById('areaChart'), {
+            type: 'bar',
+            data: {
+                labels: chartData.area.labels,
+                datasets: [{
+                    label: 'Tickets por Área',
+                    data: chartData.area.data,
+                    backgroundColor: '#5a47ea',
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+    </script>
+{% endblock %}

@@ -3,7 +3,6 @@
 {% block title %}Crear Nuevo Ticket{% endblock %}
 
 {% block content %}
-    <!-- Header -->
     <div class="hero-custom text-white py-4">
         <div class="container">
             <h1 class="h2 mb-0 fw-bold"><i class="bi bi-plus-circle me-2"></i>Crear Nuevo Ticket</h1>
@@ -11,95 +10,34 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-
+                {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}{% endwith %}
                 <div class="card card-custom">
-                    <div class="card-header bg-white py-4">
-                        <h2 class="card-title mb-0 fw-bold"><i class="bi bi-ticket-perforated me-2 text-primary"></i>Información del Ticket</h2>
-                    </div>
+                    <div class="card-header bg-white py-4"><h2 class="card-title mb-0 fw-bold"><i class="bi bi-ticket-perforated me-2 text-primary"></i>Información del Ticket</h2></div>
                     <div class="card-body p-4">
                         <form id="ticketForm" action="{{ url_for('new_ticket') }}" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-                            <!-- Campos anteriores (nombre, email, título, descripción, prioridad, adjuntos) -->
-                            <div class="mb-4">
-                                <label for="name" class="form-label fw-semibold"><i class="bi bi-person-fill text-primary me-2"></i>Nombre Completo</label>
-                                <input type="text" id="name" name="name" class="form-control form-control-lg form-control-custom" required placeholder="Juanito Perez">
-                                <div class="invalid-feedback">Por favor, ingresa tu nombre.</div>
-                            </div>
+                            <!-- Campos Nombre y Email -->
+                            <div class="mb-4"><label for="name" class="form-label fw-semibold"><i class="bi bi-person-fill text-primary me-2"></i>Nombre Completo</label><input type="text" id="name" name="name" class="form-control form-control-lg form-control-custom" required placeholder="Juan Pérez"></div>
+                            <div class="mb-4"><label for="email" class="form-label fw-semibold"><i class="bi bi-envelope-at text-primary me-2"></i>Correo Electrónico</label><input type="email" id="email" name="email" class="form-control form-control-lg form-control-custom" required placeholder="tucorreo@ejemplo.com"></div>
 
-                            <div class="mb-4">
-                                <label for="email" class="form-label fw-semibold"><i class="bi bi-envelope-at text-primary me-2"></i>Correo Electrónico</label>
-                                <input type="email" id="email" name="email" class="form-control form-control-lg form-control-custom" required placeholder="tucorreo@ejemplo.com">
-                                <div class="invalid-feedback">Por favor, ingresa un correo válido.</div>
-                            </div>
+                            <!-- Menú de Categorías -->
+                            <div class="mb-4"><label for="category_id" class="form-label fw-semibold"><i class="bi bi-tag-fill me-2"></i>Tipo de Problema</label><select id="category_id" name="category_id" class="form-select form-select-lg" required><option value="" selected disabled>-- Selecciona el motivo de tu ticket --</option>{% for category in categories %}<option value="{{ category.id }}">{{ category.title }}</option>{% endfor %}</select><div class="invalid-feedback">Por favor, selecciona una categoría.</div></div>
 
-                            <div class="mb-4">
-                                <label for="title" class="form-label fw-semibold"><i class="bi bi-type text-primary me-2"></i>Título</label>
-                                <input type="text" id="title" name="title" class="form-control form-control-lg form-control-custom" required maxlength="100" placeholder="No puedo acceder a mi cuenta">
-                                <div class="invalid-feedback">Por favor, ingresa un título.</div>
-                            </div>
+                            <!-- Descripción -->
+                            <div class="mb-4"><label for="description" class="form-label fw-semibold"><i class="bi bi-chat-text text-primary me-2"></i>Descripción</label><textarea id="description" name="description" class="form-control form-control-custom" rows="6" required placeholder="Describe detalladamente tu problema..."></textarea></div>
 
-                            <div class="mb-4">
-                                <label for="description" class="form-label fw-semibold"><i class="bi bi-chat-text text-primary me-2"></i>Descripción</label>
-                                <textarea id="description" name="description" class="form-control form-control-custom" rows="6" required placeholder="Describe detalladamente tu problema..."></textarea>
-                                <div class="invalid-feedback">Por favor, proporciona una descripción.</div>
-                            </div>
+                            <!-- Subida de Archivos -->
+                            <div class="mb-4"><label for="attachments" class="form-label fw-semibold"><i class="bi bi-paperclip text-primary me-2"></i>Adjuntar Imágenes (Opcional, máx. 2)</label><input class="form-control" type="file" id="attachments" name="attachments" multiple accept="image/png, image/jpeg, image/gif"></div>
 
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold"><i class="bi bi-exclamation-triangle text-primary me-2"></i>Prioridad</label>
-                                <div class="row">
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="priority" id="priority-low" value="Baja" checked>
-                                            <label class="form-check-label" for="priority-low"><span class="badge bg-success me-2">●</span>Baja</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="priority" id="priority-medium" value="Media">
-                                            <label class="form-check-label" for="priority-medium"><span class="badge bg-warning me-2">●</span>Media</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="priority" id="priority-high" value="Alta">
-                                            <label class="form-check-label" for="priority-high"><span class="badge bg-danger me-2">●</span>Alta</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="attachments" class="form-label fw-semibold"><i class="bi bi-paperclip text-primary me-2"></i>Adjuntar Imágenes (máx. 2)</label>
-                                <input type="file" id="attachments" name="attachments" class="form-control" multiple accept="image/png, image/jpeg, image/gif">
-                                <div class="form-text">Puedes subir hasta 2 imágenes (PNG, JPG, GIF).</div>
-                            </div>
-
-                            <!-- CAPTCHA VISUAL -->
-                            <div class="mb-4 p-3 bg-light rounded border">
-                                <label for="captcha" class="form-label fw-semibold"><i class="bi bi-shield-check text-primary me-2"></i>Verificación de Seguridad</label>
-                                <p class="mb-2">Por favor escribe las letras y números que ves en la imagen:</p>
-                                <img src="{{ url_for('captcha_image') }}" alt="captcha" class="border rounded mb-2" style="height:50px;">
-                                <input type="text" id="captcha" name="captcha" class="form-control form-control-lg mt-2" required autocomplete="off" placeholder="Escribe aquí el código">
-                                <div class="invalid-feedback">Por favor, completa el captcha.</div>
-                            </div>
+                            <!-- CAPTCHA -->
+                            <div class="mb-4 p-3 bg-light rounded border"><label for="captcha" class="form-label fw-semibold"><i class="bi bi-shield-check text-primary me-2"></i>Verificación de Seguridad</label><p class="mb-2">Ingresa los caracteres que ves en la imagen:</p><div class="d-flex align-items-center"><img src="{{ url_for('captcha_image') }}?t={{ range(1, 100000) | random }}" alt="CAPTCHA" class="me-3 rounded border" id="captcha-image"><button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('captcha-image').src='{{ url_for('captcha_image') }}?t='+Math.random()"><i class="bi bi-arrow-clockwise"></i></button></div><input type="text" id="captcha" name="captcha" class="form-control form-control-lg mt-2" required maxlength="4" style="text-transform:uppercase;"></div>
 
                             <!-- Botones -->
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <a href="{{ url_for('home') }}" class="btn btn-outline-secondary btn-lg me-md-2"><i class="bi bi-x-circle me-2"></i>Cancelar</a>
-                                <button type="button" id="previewBtn" class="btn btn-primary-custom btn-lg btn-custom"><i class="bi bi-eye me-2"></i>Revisar y Crear Ticket</button>
+                                <a href="{{ url_for('home') }}" class="btn btn-outline-secondary btn-lg me-md-2">Cancelar</a>
+                                <button type="button" id="previewBtn" class="btn btn-primary-custom btn-lg btn-custom"><i class="bi bi-eye me-2"></i>Revisar y Crear</button>
                             </div>
                         </form>
                     </div>
@@ -112,18 +50,14 @@
     <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="confirmModalLabel"><i class="bi bi-check-circle me-2"></i>Confirmar Creación del Ticket</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
+                <div class="modal-header bg-primary text-white"><h5 class="modal-title" id="confirmModalLabel"><i class="bi bi-check-circle me-2"></i>Confirmar Creación del Ticket</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button></div>
                 <div class="modal-body">
-                    <div class="alert alert-info"><strong>Revisa la información antes de crear tu ticket.</strong></div>
+                    <p>Por favor, revisa la información antes de crear tu ticket:</p>
                     <div class="card"><div class="card-body">
-                        <div class="row mb-3"><div class="col-3"><strong>Nombre:</strong></div><div class="col-9" id="confirmName"></div></div>
-                        <div class="row mb-3"><div class="col-3"><strong>Email:</strong></div><div class="col-9" id="confirmEmail"></div></div>
-                        <div class="row mb-3"><div class="col-3"><strong>Título:</strong></div><div class="col-9" id="confirmTitle"></div></div>
-                        <div class="row mb-3"><div class="col-3"><strong>Prioridad:</strong></div><div class="col-9" id="confirmPriority"></div></div>
-                        <div class="row"><div class="col-3"><strong>Descripción:</strong></div><div class="col-9" id="confirmDescription" style="white-space: pre-wrap;"></div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Nombre:</strong></div><div class="col-sm-8"><span id="confirmName"></span></div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Email:</strong></div><div class="col-sm-8"><span id="confirmEmail"></span></div></div>
+                        <div class="row mb-2"><div class="col-sm-4"><strong>Categoría:</strong></div><div class="col-sm-8"><span id="confirmCategory"></span></div></div>
+                        <div class="row"><div class="col-sm-4"><strong>Descripción:</strong></div><div class="col-sm-8"><div id="confirmDescription" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto;"></div></div></div>
                     </div></div>
                 </div>
                 <div class="modal-footer">
@@ -137,28 +71,46 @@
 
 {% block scripts %}
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
+            const ticketForm = document.getElementById('ticketForm');
             const previewBtn = document.getElementById('previewBtn');
             const confirmCreateBtn = document.getElementById('confirmCreateBtn');
-            const ticketForm = document.getElementById('ticketForm');
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
 
-            previewBtn.addEventListener('click', (e) => {
+            // Prevenir envío por defecto
+            ticketForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                if (ticketForm.checkValidity()) {
-                    // Mostrar datos en modal
-                    document.getElementById('confirmName').textContent = document.getElementById('name').value;
-                    document.getElementById('confirmEmail').textContent = document.getElementById('email').value;
-                    document.getElementById('confirmTitle').textContent = document.getElementById('title').value;
-                    document.getElementById('confirmPriority').textContent = document.querySelector('input[name="priority"]:checked').value;
-                    document.getElementById('confirmDescription').textContent = document.getElementById('description').value;
-                    confirmModal.show();
-                } else {
-                    ticketForm.classList.add('was-validated');
-                }
             });
 
-            confirmCreateBtn.addEventListener('click', () => {
+            previewBtn.addEventListener('click', function() {
+                // Añadir validación de Bootstrap
+                ticketForm.classList.add('was-validated');
+                if (!ticketForm.checkValidity()) {
+                    // Forzar scroll al primer campo inválido
+                    const firstInvalid = ticketForm.querySelector(':invalid');
+                    if (firstInvalid) {
+                        firstInvalid.focus();
+                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+
+                // Llenar el modal con los datos
+                document.getElementById('confirmName').textContent = document.getElementById('name').value;
+                document.getElementById('confirmEmail').textContent = document.getElementById('email').value;
+                const categorySelect = document.getElementById('category_id');
+                document.getElementById('confirmCategory').textContent = categorySelect.options[categorySelect.selectedIndex].text;
+                document.getElementById('confirmDescription').textContent = document.getElementById('description').value;
+
+                confirmModal.show();
+            });
+
+            confirmCreateBtn.addEventListener('click', function() {
+                // Cambiar botón a estado de carga
+                confirmCreateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando...';
+                confirmCreateBtn.disabled = true;
+
+                // Enviar el formulario
                 ticketForm.submit();
             });
         });

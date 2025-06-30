@@ -1,0 +1,27 @@
+{% extends "email/email_base.html" %}
+
+{% block title %}Confirmación de Ticket #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+    <h1 style="color: #333333; font-size: 24px; margin-top: 0;">¡Hola, {{ ticket.customer_name }}!</h1>
+    <p>Hemos recibido tu solicitud de soporte con el título: "<strong>{{ ticket.title }}</strong>".</p>
+    <p>Tu número de ticket es el <strong>#{{ ticket.id }}</strong> y tu ID de seguimiento es <strong>{{ ticket.tracking_id }}</strong>.</p>
+    <p>Puedes seguir el estado de tu ticket y responder a nuestros agentes en cualquier momento haciendo clic en el siguiente botón:</p>
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 30px 0;">
+        <tr>
+            <td align="center">
+                <a href="{{ url_for('track_ticket', tracking_id=ticket.tracking_id, _external=True) }}" style="background-color: #5a47ea; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                    Ver mi Ticket
+                </a>
+            </td>
+        </tr>
+    </table>
+
+    <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-top: 25px; font-size: 0.9em; color: #664d03;">
+        <h4 style="margin-top: 0; color: #664d03;">Nota Importante</h4>
+        <p style="margin-bottom: 0;">
+            Para mantener nuestro sistema organizado, si un ticket recibe una respuesta de nuestro equipo y no obtenemos contestación de tu parte en <strong>3 días</strong>, se cerrará automáticamente.
+        </p>
+    </div>
+{% endblock %}

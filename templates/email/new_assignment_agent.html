@@ -1,0 +1,39 @@
+{% extends "email/email_base.html" %}
+
+{% block title %}Nuevo Ticket Asignado: #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+    <h1 style="color: #333333; font-size: 24px; margin-top: 0;">¡Hola, {{ agent.username }}!</h1>
+    <p>Se te ha asignado un nuevo ticket de soporte. Aquí están los detalles:</p>
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="10" style="margin: 20px 0; border: 1px solid #e9ecef; border-radius: 8px;">
+        <tr>
+            <td style="background-color: #f8f9fa; width: 120px;"><strong>Ticket ID:</strong></td>
+            <td>#{{ ticket.id }}</td>
+        </tr>
+        <tr>
+            <td style="background-color: #f8f9fa;"><strong>Cliente:</strong></td>
+            <td>{{ ticket.customer_name }} ({{ ticket.customer_email }})</td>
+        </tr>
+        <tr>
+            <td style="background-color: #f8f9fa;"><strong>Categoría:</strong></td>
+            <td>{{ ticket.title }}</td>
+        </tr>
+        <tr>
+            <td style="background-color: #f8f9fa;"><strong>Prioridad:</strong></td>
+            <td><strong>{{ ticket.priority }}</strong></td>
+        </tr>
+    </table>
+
+    <p>Puedes ver todos los detalles y responder al cliente haciendo clic en el siguiente botón:</p>
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 30px 0;">
+        <tr>
+            <td align="center">
+                <a href="{{ url_for('track_ticket', tracking_id=ticket.tracking_id, _external=True) }}" style="background-color: #28a745; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                    Ver Ticket Asignado
+                </a>
+            </td>
+        </tr>
+    </table>
+{% endblock %}

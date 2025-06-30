@@ -1,0 +1,25 @@
+{% extends "email/email_base.html" %}
+
+{% block title %}Nueva respuesta en tu Ticket #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+    <h1 style="color: #333333; font-size: 24px; margin-top: 0;">¡Hola, {{ ticket.customer_name }}!</h1>
+    <p>El agente <strong>{{ comment.author_name }}</strong> ha respondido a tu ticket de soporte <strong>#{{ ticket.id }} - "{{ ticket.title }}"</strong>.</p>
+
+    <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <p style="margin-top: 0;"><strong>Respuesta:</strong></p>
+        <div style="font-size: 1em; line-height: 1.6;">{{ comment.content | safe }}</div>
+    </div>
+
+    <p>Puedes ver la conversación completa y responder haciendo clic en el siguiente botón:</p>
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 30px 0;">
+        <tr>
+            <td align="center">
+                <a href="{{ url_for('track_ticket', tracking_id=ticket.tracking_id, _external=True) }}" style="background-color: #5a47ea; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                    Ver y Responder
+                </a>
+            </td>
+        </tr>
+    </table>
+{% endblock %}
